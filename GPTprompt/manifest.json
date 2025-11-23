@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT 提示詞管理工具",
+  "name": "ChatGPT Prompt Manager",
   "version": "1.0.0",
-  "description": "快速管理和使用 ChatGPT 提示詞模板，支援自訂變數和快速插入功能",
+  "description": "Manage and quickly use ChatGPT prompt templates with variable support and quick insertion",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

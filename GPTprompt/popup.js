@@ -17,6 +17,7 @@ const cancelBtn = document.getElementById('cancelBtn');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const fileInput = document.getElementById('fileInput');
+const langBtn = document.getElementById('langBtn');
 
 // 當前編輯的提示詞 ID
 let currentEditingId = null;
@@ -26,6 +27,10 @@ let currentInsertingPrompt = null;
  * 初始化
  */
 document.addEventListener('DOMContentLoaded', async () => {
+  // 初始化語言設定
+  await I18n.init();
+  I18n.updatePageTranslations();
+
   await loadPrompts();
   setupEventListeners();
 });
@@ -34,6 +39,9 @@ document.addEventListener('DOMContentLoaded', async () => {
  * 設置事件監聽器
  */
 function setupEventListeners() {
+  // 語言切換
+  langBtn.addEventListener('click', handleLanguageSwitch);
+
   // 搜尋
   searchInput.addEventListener('input', debounce(handleSearch, 300));
 
@@ -52,7 +60,8 @@ function setupEventListeners() {
   // 快速插入變數按鈕
   document.querySelectorAll('.var-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const varName = btn.dataset.var;
+      const varKey = btn.dataset.varKey;
+      const varName = I18n.t(varKey);
       const textarea = document.getElementById('promptContent');
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
@@ -80,6 +89,18 @@ function setupEventListeners() {
   variableModal.addEventListener('click', (e) => {
     if (e.target === variableModal) closeVariableModalFunc();
   });
+}
+
+/**
+ * 處理語言切換
+ */
+async function handleLanguageSwitch() {
+  const newLang = I18n.currentLang === 'zh-TW' ? 'en' : 'zh-TW';
+  await I18n.setLanguage(newLang);
+  I18n.updatePageTranslations();
+
+  // 重新載入提示詞列表（如果需要更新動態內容）
+  await loadPrompts(searchInput.value);
 }
 
 /**
@@ -183,7 +204,7 @@ function createPromptCard(prompt) {
 function openEditModal(prompt = null) {
   currentEditingId = prompt ? prompt.id : null;
 
-  document.getElementById('modalTitle').textContent = prompt ? '編輯提示詞' : '新增提示詞';
+  document.getElementById('modalTitle').textContent = prompt ? I18n.t('editPromptTitle') : I18n.t('addPromptTitle');
   document.getElementById('promptName').value = prompt ? prompt.name : '';
   document.getElementById('promptCategory').value = prompt ? (prompt.category || '') : '';
   document.getElementById('promptContent').value = prompt ? prompt.content : '';
@@ -217,7 +238,7 @@ async function handleSavePrompt() {
   const content = document.getElementById('promptContent').value.trim();
 
   if (!name || !content) {
-    alert('請填寫提示詞名稱和內容');
+    alert(I18n.t('fillRequired'));
     return;
   }
 
@@ -237,7 +258,7 @@ async function handleSavePrompt() {
     await loadPrompts(searchInput.value);
   } catch (error) {
     console.error('儲存失敗:', error);
-    alert('儲存失敗，請重試');
+    alert(I18n.t('saveFailed'));
   }
 }
 
@@ -245,7 +266,7 @@ async function handleSavePrompt() {
  * 刪除提示詞
  */
 async function deletePrompt(id) {
-  if (!confirm('確定要刪除這個提示詞嗎？')) {
+  if (!confirm(I18n.t('confirmDelete'))) {
     return;
   }
 
@@ -254,7 +275,7 @@ async function deletePrompt(id) {
     await loadPrompts(searchInput.value);
   } catch (error) {
     console.error('刪除失敗:', error);
-    alert('刪除失敗，請重試');
+    alert(I18n.t('deleteFailed'));
   }
 }
 
@@ -287,7 +308,7 @@ function showVariableModal(variables) {
     div.className = 'form-group';
     div.innerHTML = `
       <label for="var-${variable}">${escapeHtml(variable)}</label>
-      <input type="text" id="var-${variable}" data-variable="${variable}" placeholder="請輸入 ${escapeHtml(variable)}" />
+      <input type="text" id="var-${variable}" data-variable="${variable}" placeholder="${I18n.t('enterVariable', { variable: escapeHtml(variable) })}" />
     `;
     container.appendChild(div);
   });
@@ -310,7 +331,7 @@ async function handleInsertPrompt() {
     const variable = input.dataset.variable;
     const value = input.value.trim();
     if (!value) {
-      alert(`請填寫 ${variable}`);
+      alert(I18n.t('fillVariable', { variable }));
       input.focus();
       return;
     }
@@ -338,11 +359,11 @@ async function insertToPage(content) {
       });
       window.close(); // 關閉 popup
     } else {
-      alert('請在 ChatGPT 頁面使用此功能');
+      alert(I18n.t('notChatGPTPage'));
     }
   } catch (error) {
     console.error('插入失敗:', error);
-    alert('插入失敗，請確保您在 ChatGPT 頁面');
+    alert(I18n.t('insertFailed'));
   }
 }
 
@@ -368,7 +389,7 @@ async function handleExport() {
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('匯出失敗:', error);
-    alert('匯出失敗，請重試');
+    alert(I18n.t('exportFailed'));
   }
 }
 
@@ -383,12 +404,12 @@ async function handleImport(e) {
   reader.onload = async (event) => {
     try {
       const result = await StorageManager.importPrompts(event.target.result, true);
-      alert(`成功匯入 ${result.count} 個提示詞`);
+      alert(I18n.t('importSuccess', { count: result.count }));
       await loadPrompts();
       fileInput.value = ''; // 清空文件輸入
     } catch (error) {
       console.error('匯入失敗:', error);
-      alert('匯入失敗，請確認檔案格式正確');
+      alert(I18n.t('importFailed'));
     }
   };
   reader.readAsText(file);

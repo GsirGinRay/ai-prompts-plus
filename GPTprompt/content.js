@@ -7,6 +7,106 @@
 let promptsData = [];
 let currentPrompt = null;
 let promptPanel = null;
+let currentLang = 'zh-TW';
+
+// 翻譯文本
+const i18nMessages = {
+  'zh-TW': {
+    promptNotInserted: '找不到輸入框，請確認您在 ChatGPT 對話頁面',
+    promptInserted: '提示詞已插入並送出',
+    prompts: '提示詞',
+    openPromptManager: '開啟提示詞管理器',
+    promptManager: '提示詞管理器',
+    add: '新增',
+    close: '關閉',
+    searchPrompts: '搜尋提示詞 (可使用 / 開頭)...',
+    noPrompts: '沒有提示詞，點擊「新增」按鈕建立第一個提示詞',
+    edit: '編輯',
+    back: '← 返回',
+    insertPrompt: '插入提示詞',
+    enterValue: '請輸入 {variable}',
+    fillAllVariables: '請填寫所有變數',
+    completeCurrentOperation: '請先完成當前的操作',
+    completeOrCancelEdit: '請先完成或取消當前的編輯',
+    addPrompt: '新增提示詞',
+    editPrompt: '編輯提示詞',
+    promptName: '提示詞名稱',
+    promptNamePlaceholder: '輸入提示詞名稱',
+    category: '分類',
+    categoryPlaceholder: '輸入分類（選填）',
+    promptContent: '提示詞內容',
+    promptContentPlaceholder: '輸入提示詞內容，使用 [變數名] 來標記變數',
+    variableTips: '<strong>提示：</strong>使用 [變數名] 來標記變數，例如：[主題]、[關鍵字] 等',
+    save: '保存',
+    delete: '刪除',
+    fillRequired: '請填寫提示詞名稱和內容',
+    promptUpdated: '提示詞已更新',
+    promptAdded: '提示詞已新增',
+    saveFailed: '保存失敗',
+    confirmDelete: '確定要刪除這個提示詞嗎？',
+    promptDeleted: '提示詞已刪除',
+    deleteFailed: '刪除失敗',
+    required: '*'
+  },
+  'en': {
+    promptNotInserted: 'Input box not found, please ensure you are on ChatGPT conversation page',
+    promptInserted: 'Prompt inserted and sent',
+    prompts: 'Prompts',
+    openPromptManager: 'Open Prompt Manager',
+    promptManager: 'Prompt Manager',
+    add: 'Add',
+    close: 'Close',
+    searchPrompts: 'Search prompts (use / prefix)...',
+    noPrompts: 'No prompts yet, click "Add" to create your first prompt',
+    edit: 'Edit',
+    back: '← Back',
+    insertPrompt: 'Insert Prompt',
+    enterValue: 'Enter {variable}',
+    fillAllVariables: 'Please fill all variables',
+    completeCurrentOperation: 'Please complete current operation',
+    completeOrCancelEdit: 'Please complete or cancel current edit',
+    addPrompt: 'Add Prompt',
+    editPrompt: 'Edit Prompt',
+    promptName: 'Prompt Name',
+    promptNamePlaceholder: 'Enter prompt name',
+    category: 'Category',
+    categoryPlaceholder: 'Enter category (optional)',
+    promptContent: 'Prompt Content',
+    promptContentPlaceholder: 'Enter prompt content, use [variable_name] to mark variables',
+    variableTips: '<strong>Tip:</strong> Use [variable_name] to mark variables, e.g., [topic], [keyword]',
+    save: 'Save',
+    delete: 'Delete',
+    fillRequired: 'Please fill prompt name and content',
+    promptUpdated: 'Prompt updated',
+    promptAdded: 'Prompt added',
+    saveFailed: 'Save failed',
+    confirmDelete: 'Are you sure you want to delete this prompt?',
+    promptDeleted: 'Prompt deleted',
+    deleteFailed: 'Delete failed',
+    required: '*'
+  }
+};
+
+// 獲取翻譯文本
+function t(key, params = {}) {
+  let text = i18nMessages[currentLang]?.[key] || i18nMessages['zh-TW'][key] || key;
+  Object.keys(params).forEach(param => {
+    text = text.replace(`{${param}}`, params[param]);
+  });
+  return text;
+}
+
+// 初始化語言設定
+async function initLanguage() {
+  try {
+    const result = await chrome.storage.local.get('language');
+    if (result.language) {
+      currentLang = result.language;
+    }
+  } catch (error) {
+    console.error('Failed to load language:', error);
+  }
+}
 
 /**
  * 監聽來自 popup 的訊息
@@ -47,7 +147,7 @@ function insertPromptToTextarea(content) {
 
   if (!textarea) {
     console.error('找不到 ChatGPT 輸入框');
-    showNotification('找不到輸入框，請確認您在 ChatGPT 對話頁面', 'error');
+    showNotification(t('promptNotInserted'), 'error');
     return;
   }
 
@@ -91,7 +191,7 @@ function insertPromptToTextarea(content) {
   }, 100);
 
   // 顯示成功通知
-  showNotification('提示詞已插入並送出', 'success');
+  showNotification(t('promptInserted'), 'success');
 }
 
 /**
@@ -228,9 +328,9 @@ function createQuickAccessButton() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
-    <span>提示詞</span>
+    <span>${t('prompts')}</span>
   `;
-  button.title = '開啟提示詞管理器';
+  button.title = t('openPromptManager');
 
   button.addEventListener('click', () => {
     togglePromptPanel();
@@ -274,20 +374,20 @@ async function createPromptPanel() {
 
   promptPanel.innerHTML = `
     <div class="prompt-panel-header">
-      <h3>提示詞管理器</h3>
+      <h3>${t('promptManager')}</h3>
       <div class="prompt-panel-header-actions">
-        <button class="prompt-panel-add" title="新增提示詞">
+        <button class="prompt-panel-add" title="${t('addPrompt')}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          新增
+          ${t('add')}
         </button>
-        <button class="prompt-panel-close" title="關閉">✕</button>
+        <button class="prompt-panel-close" title="${t('close')}">✕</button>
       </div>
     </div>
     <div class="prompt-panel-search">
-      <input type="text" id="prompt-search" placeholder="搜尋提示詞 (可使用 / 開頭)..." />
+      <input type="text" id="prompt-search" placeholder="${t('searchPrompts')}" />
     </div>
     <div class="prompt-panel-list" id="prompt-panel-list">
       ${renderPromptList(promptsData)}
@@ -382,7 +482,7 @@ function findInputContainer() {
  */
 function renderPromptList(prompts) {
   if (prompts.length === 0) {
-    return '<div class="prompt-panel-empty">沒有提示詞，點擊「新增」按鈕建立第一個提示詞</div>';
+    return `<div class="prompt-panel-empty">${t('noPrompts')}</div>`;
   }
 
   return prompts.map(prompt => {
@@ -393,7 +493,7 @@ function renderPromptList(prompts) {
           <div class="prompt-item-title">${escapeHtml(prompt.name)}</div>
           <div class="prompt-item-actions">
             ${prompt.category ? `<span class="prompt-item-category">${escapeHtml(prompt.category)}</span>` : ''}
-            <button class="prompt-item-edit" data-id="${prompt.id}" title="編輯">
+            <button class="prompt-item-edit" data-id="${prompt.id}" title="${t('edit')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -472,7 +572,7 @@ function showVariableInputPanel(prompt, variables) {
   const existingVariablePanel = promptPanel.querySelector('.prompt-variable-panel');
   const existingAddPanel = promptPanel.querySelector('.prompt-add-panel');
   if (existingVariablePanel || existingAddPanel) {
-    showNotification('請先完成當前的操作', 'error');
+    showNotification(t('completeCurrentOperation'), 'error');
     return;
   }
 
@@ -483,19 +583,19 @@ function showVariableInputPanel(prompt, variables) {
   variablePanel.className = 'prompt-variable-panel';
   variablePanel.innerHTML = `
     <div class="prompt-variable-header">
-      <button class="prompt-back-btn">← 返回</button>
+      <button class="prompt-back-btn">${t('back')}</button>
       <h4>${escapeHtml(prompt.name)}</h4>
     </div>
     <div class="prompt-variable-inputs">
       ${variables.map(v => `
         <div class="prompt-variable-group">
           <label>${escapeHtml(v)}</label>
-          <input type="text" class="prompt-variable-input" data-variable="${escapeHtml(v)}" placeholder="請輸入 ${escapeHtml(v)}" />
+          <input type="text" class="prompt-variable-input" data-variable="${escapeHtml(v)}" placeholder="${t('enterValue', { variable: escapeHtml(v) })}" />
         </div>
       `).join('')}
     </div>
     <div class="prompt-variable-actions">
-      <button class="prompt-insert-btn">插入提示詞</button>
+      <button class="prompt-insert-btn">${t('insertPrompt')}</button>
     </div>
   `;
 
@@ -529,7 +629,7 @@ function showVariableInputPanel(prompt, variables) {
     });
 
     if (hasError) {
-      showNotification('請填寫所有變數', 'error');
+      showNotification(t('fillAllVariables'), 'error');
       return;
     }
 
@@ -571,7 +671,7 @@ function showAddPromptPanel(editPrompt = null) {
   // 檢查是否已經有新增面板存在
   const existingAddPanel = promptPanel.querySelector('.prompt-add-panel');
   if (existingAddPanel) {
-    showNotification('請先完成或取消當前的編輯', 'error');
+    showNotification(t('completeOrCancelEdit'), 'error');
     return;
   }
 
@@ -582,28 +682,28 @@ function showAddPromptPanel(editPrompt = null) {
   addPanel.className = 'prompt-add-panel';
   addPanel.innerHTML = `
     <div class="prompt-add-header">
-      <button class="prompt-back-btn">← 返回</button>
-      <h4>${editPrompt ? '編輯提示詞' : '新增提示詞'}</h4>
+      <button class="prompt-back-btn">${t('back')}</button>
+      <h4>${editPrompt ? t('editPrompt') : t('addPrompt')}</h4>
     </div>
     <div class="prompt-add-form">
       <div class="prompt-form-group">
-        <label>提示詞名稱 *</label>
-        <input type="text" id="add-prompt-name" class="prompt-form-input" placeholder="輸入提示詞名稱" value="${editPrompt ? escapeHtml(editPrompt.name) : ''}" />
+        <label>${t('promptName')} ${t('required')}</label>
+        <input type="text" id="add-prompt-name" class="prompt-form-input" placeholder="${t('promptNamePlaceholder')}" value="${editPrompt ? escapeHtml(editPrompt.name) : ''}" />
       </div>
       <div class="prompt-form-group">
-        <label>分類</label>
-        <input type="text" id="add-prompt-category" class="prompt-form-input" placeholder="輸入分類（選填）" value="${editPrompt ? (editPrompt.category || '') : ''}" />
+        <label>${t('category')}</label>
+        <input type="text" id="add-prompt-category" class="prompt-form-input" placeholder="${t('categoryPlaceholder')}" value="${editPrompt ? (editPrompt.category || '') : ''}" />
       </div>
       <div class="prompt-form-group">
-        <label>提示詞內容 *</label>
-        <textarea id="add-prompt-content" class="prompt-form-textarea" placeholder="輸入提示詞內容，使用 [變數名] 來標記變數">${editPrompt ? escapeHtml(editPrompt.content) : ''}</textarea>
+        <label>${t('promptContent')} ${t('required')}</label>
+        <textarea id="add-prompt-content" class="prompt-form-textarea" placeholder="${t('promptContentPlaceholder')}">${editPrompt ? escapeHtml(editPrompt.content) : ''}</textarea>
       </div>
       <div class="prompt-form-tips">
-        <strong>提示：</strong>使用 [變數名] 來標記變數，例如：[主題]、[關鍵字] 等
+        ${t('variableTips')}
       </div>
       <div class="prompt-form-actions">
-        <button class="prompt-save-btn">${editPrompt ? '保存' : '新增'}</button>
-        ${editPrompt ? '<button class="prompt-delete-btn">刪除</button>' : ''}
+        <button class="prompt-save-btn">${editPrompt ? t('save') : t('add')}</button>
+        ${editPrompt ? `<button class="prompt-delete-btn">${t('delete')}</button>` : ''}
       </div>
     </div>
   `;
@@ -626,7 +726,7 @@ function showAddPromptPanel(editPrompt = null) {
     const content = document.getElementById('add-prompt-content').value.trim();
 
     if (!name || !content) {
-      showNotification('請填寫提示詞名稱和內容', 'error');
+      showNotification(t('fillRequired'), 'error');
       return;
     }
 
@@ -658,7 +758,7 @@ function showAddPromptPanel(editPrompt = null) {
       await chrome.storage.local.set({ prompts });
       promptsData = prompts;
 
-      showNotification(editPrompt ? '提示詞已更新' : '提示詞已新增', 'success');
+      showNotification(editPrompt ? t('promptUpdated') : t('promptAdded'), 'success');
 
       // 返回列表
       addPanel.remove();
@@ -668,14 +768,14 @@ function showAddPromptPanel(editPrompt = null) {
       bindPromptItemEvents();
     } catch (error) {
       console.error('保存失敗:', error);
-      showNotification('保存失敗', 'error');
+      showNotification(t('saveFailed'), 'error');
     }
   });
 
   // 綁定刪除按鈕
   if (editPrompt) {
     addPanel.querySelector('.prompt-delete-btn').addEventListener('click', async () => {
-      if (!confirm('確定要刪除這個提示詞嗎？')) {
+      if (!confirm(t('confirmDelete'))) {
         return;
       }
 
@@ -686,7 +786,7 @@ function showAddPromptPanel(editPrompt = null) {
         await chrome.storage.local.set({ prompts: filtered });
         promptsData = filtered;
 
-        showNotification('提示詞已刪除', 'success');
+        showNotification(t('promptDeleted'), 'success');
 
         // 返回列表
         addPanel.remove();
@@ -696,7 +796,7 @@ function showAddPromptPanel(editPrompt = null) {
         bindPromptItemEvents();
       } catch (error) {
         console.error('刪除失敗:', error);
-        showNotification('刪除失敗', 'error');
+        showNotification(t('deleteFailed'), 'error');
       }
     });
   }
@@ -726,7 +826,10 @@ function escapeHtml(text) {
 /**
  * 初始化
  */
-function init() {
+async function init() {
+  // 初始化語言設定
+  await initLanguage();
+
   // 等待頁面載入完成
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', createQuickAccessButton);
