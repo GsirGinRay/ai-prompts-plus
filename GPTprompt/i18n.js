@@ -69,7 +69,10 @@ const I18n = {
       // 語言設定
       language: '語言',
       languageZhTW: '繁體中文',
-      languageEn: 'English'
+      languageEn: 'English',
+
+      // 載入預設提示詞
+      loadDefaultPrompts: '載入預設提示詞'
     },
 
     'en': {
@@ -132,7 +135,10 @@ const I18n = {
       // Language Settings
       language: 'Language',
       languageZhTW: '繁體中文',
-      languageEn: 'English'
+      languageEn: 'English',
+
+      // Load Default Prompts
+      loadDefaultPrompts: 'Load Default Prompts'
     }
   },
 

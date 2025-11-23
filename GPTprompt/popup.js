@@ -18,6 +18,7 @@ const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const fileInput = document.getElementById('fileInput');
 const langBtn = document.getElementById('langBtn');
+const loadDefaultBtn = document.getElementById('loadDefaultBtn');
 
 // 當前編輯的提示詞 ID
 let currentEditingId = null;
@@ -71,6 +72,9 @@ async function initializeDefaultPrompts() {
 function setupEventListeners() {
   // 語言切換
   langBtn.addEventListener('click', handleLanguageSwitch);
+
+  // 載入預設提示詞
+  loadDefaultBtn.addEventListener('click', handleLoadDefaultPrompts);
 
   // 搜尋
   searchInput.addEventListener('input', debounce(handleSearch, 300));
@@ -131,6 +135,64 @@ async function handleLanguageSwitch() {
 
   // 重新載入提示詞列表（如果需要更新動態內容）
   await loadPrompts(searchInput.value);
+}
+
+/**
+ * 處理載入預設提示詞
+ */
+async function handleLoadDefaultPrompts() {
+  const message = I18n.currentLang === 'zh-TW'
+    ? '要載入 10 個預設提示詞嗎？\n\n這不會刪除你現有的提示詞，會合併在一起。'
+    : 'Load 10 default prompts?\n\nThis will not delete your existing prompts, they will be merged.';
+
+  if (!confirm(message)) {
+    return;
+  }
+
+  try {
+    // 獲取當前的提示詞
+    const result = await chrome.storage.local.get(['prompts']);
+    const existingPrompts = result.prompts || [];
+
+    // 獲取對應語言的預設提示詞
+    const defaultPrompts = DefaultPrompts.getDefaultPrompts(I18n.currentLang);
+
+    // 檢查哪些預設提示詞還沒有（根據 ID）
+    const existingIds = new Set(existingPrompts.map(p => p.id));
+    const newPrompts = defaultPrompts.filter(p => !existingIds.has(p.id));
+
+    if (newPrompts.length === 0) {
+      const alreadyLoadedMsg = I18n.currentLang === 'zh-TW'
+        ? '所有預設提示詞都已經存在了！'
+        : 'All default prompts already exist!';
+      alert(alreadyLoadedMsg);
+      return;
+    }
+
+    // 合併提示詞
+    const mergedPrompts = [...existingPrompts, ...newPrompts];
+
+    // 儲存
+    await chrome.storage.local.set({
+      prompts: mergedPrompts,
+      defaultPromptsLoaded: true
+    });
+
+    // 重新載入列表
+    await loadPrompts(searchInput.value);
+
+    // 顯示成功訊息
+    const successMsg = I18n.currentLang === 'zh-TW'
+      ? `成功載入 ${newPrompts.length} 個預設提示詞！`
+      : `Successfully loaded ${newPrompts.length} default prompts!`;
+    alert(successMsg);
+  } catch (error) {
+    console.error('載入預設提示詞失敗:', error);
+    const errorMsg = I18n.currentLang === 'zh-TW'
+      ? '載入失敗，請重試'
+      : 'Load failed, please try again';
+    alert(errorMsg);
+  }
 }
 
 /**
