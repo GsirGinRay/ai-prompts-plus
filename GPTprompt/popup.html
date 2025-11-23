@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提示詞管理</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 標題列 -->
+    <header class="header">
+      <h1>💬 提示詞管理</h1>
+      <div class="header-actions">
+        <button id="exportBtn" class="icon-btn" title="匯出提示詞">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+        <button id="importBtn" class="icon-btn" title="匯入提示詞">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 搜尋列 -->
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="搜尋提示詞..." />
+      <button id="addPromptBtn" class="btn-primary">+ 新增提示詞</button>
+    </div>
+
+    <!-- 提示詞列表 -->
+    <div id="promptList" class="prompt-list">
+      <!-- 提示詞卡片將動態生成 -->
+    </div>
+
+    <!-- 空狀態 -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <p>尚無提示詞模板</p>
+      <p class="empty-hint">點擊上方「新增提示詞」開始使用</p>
+    </div>
+  </div>
+
+  <!-- 編輯/新增提示詞模態框 -->
+  <div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">新增提示詞</h2>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="promptName">提示詞名稱 *</label>
+          <input type="text" id="promptName" placeholder="例如：SEO 文章撰寫" required />
+        </div>
+        <div class="form-group">
+          <label for="promptCategory">分類/標籤</label>
+          <input type="text" id="promptCategory" placeholder="例如：寫作、行銷、程式設計" />
+        </div>
+        <div class="form-group">
+          <label for="promptContent">提示詞內容 *</label>
+          <textarea id="promptContent" rows="8" placeholder="輸入提示詞內容，使用 [變數名稱] 格式標記變數&#10;例如：請幫我撰寫關於 [主題] 的文章..." required></textarea>
+          <div class="hint-text">
+            💡 使用 [變數名稱] 來標記可替換的內容
+          </div>
+        </div>
+        <div class="form-group">
+          <label>快速插入變數：</label>
+          <div class="variable-buttons">
+            <button class="var-btn" data-var="主題">主題</button>
+            <button class="var-btn" data-var="關鍵字">關鍵字</button>
+            <button class="var-btn" data-var="受眾">受眾</button>
+            <button class="var-btn" data-var="字數">字數</button>
+            <button class="var-btn" data-var="語氣風格">語氣風格</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelBtn" class="btn-secondary">取消</button>
+        <button id="saveBtn" class="btn-primary">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 變數輸入模態框 -->
+  <div id="variableModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>填寫變數</h2>
+        <button class="close-btn" id="closeVariableModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="variableInputs">
+          <!-- 變數輸入框將動態生成 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelVariableBtn" class="btn-secondary">取消</button>
+        <button id="insertPromptBtn" class="btn-primary">插入提示詞</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隱藏的文件輸入 -->
+  <input type="file" id="fileInput" accept=".json" style="display: none;" />
+
+  <script src="popup.js"></script>
+</body>
+</html>
