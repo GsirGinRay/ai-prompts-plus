@@ -520,6 +520,8 @@
   flex: 1;
   overflow-y: auto;
   margin-bottom: 14px;
+  min-height: 0;
+  max-height: 280px;
 }
 
 .prompt-variable-inputs::-webkit-scrollbar {
@@ -623,6 +625,12 @@
   background: #000000;
   color: #ffffff;
   border-color: #333333;
+}
+
+.prompt-notification.warning {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
 }
 
 .prompt-notification.error {
