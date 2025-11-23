@@ -271,7 +271,7 @@ body {
   border-radius: 12px;
   width: 90%;
   max-width: 550px;
-  max-height: 90%;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
@@ -315,6 +315,7 @@ body {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 .form-group {

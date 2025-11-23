@@ -24,7 +24,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 async function initializeStorage() {
   try {
     // 檢查是否已有提示詞
-    const result = await chrome.storage.local.get(['prompts']);
+    const result = await chrome.storage.local.get('prompts');
     if (!result.prompts) {
       // 初始化為空陣列
       await chrome.storage.local.set({ prompts: [] });

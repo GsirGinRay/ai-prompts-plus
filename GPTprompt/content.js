@@ -361,7 +361,7 @@ async function togglePromptPanel() {
  */
 async function createPromptPanel() {
   // 從 storage 載入提示詞
-  const result = await chrome.storage.local.get(['prompts']);
+  const result = await chrome.storage.local.get('prompts');
   promptsData = result.prompts || [];
 
   // 找到輸入框容器
@@ -651,7 +651,7 @@ function showVariableInputPanel(prompt, variables) {
  */
 async function incrementUsageCount(id) {
   try {
-    const result = await chrome.storage.local.get(['prompts']);
+    const result = await chrome.storage.local.get('prompts');
     const prompts = result.prompts || [];
     const prompt = prompts.find(p => p.id === id);
     if (prompt) {
@@ -741,7 +741,7 @@ function showAddPromptPanel(editPrompt = null) {
     };
 
     try {
-      const result = await chrome.storage.local.get(['prompts']);
+      const result = await chrome.storage.local.get('prompts');
       let prompts = result.prompts || [];
 
       if (editPrompt) {
@@ -780,7 +780,7 @@ function showAddPromptPanel(editPrompt = null) {
       }
 
       try {
-        const result = await chrome.storage.local.get(['prompts']);
+        const result = await chrome.storage.local.get('prompts');
         const prompts = result.prompts || [];
         const filtered = prompts.filter(p => p.id !== editPrompt.id);
         await chrome.storage.local.set({ prompts: filtered });

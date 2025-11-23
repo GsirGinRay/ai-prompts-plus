@@ -170,7 +170,7 @@ async function handleLoadDefaultPrompts() {
 
   try {
     // 獲取當前的提示詞
-    const result = await chrome.storage.local.get(['prompts']);
+    const result = await chrome.storage.local.get('prompts');
     const existingPrompts = result.prompts || [];
 
     // 獲取對應語言的預設提示詞

@@ -10,7 +10,7 @@ const StorageManager = {
    */
   async getAllPrompts() {
     try {
-      const result = await chrome.storage.local.get(['prompts']);
+      const result = await chrome.storage.local.get('prompts');
       return result.prompts || [];
     } catch (error) {
       console.error('獲取提示詞失敗:', error);
