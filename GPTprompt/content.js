@@ -46,7 +46,8 @@ const i18nMessages = {
     confirmDelete: '確定要刪除這個提示詞嗎？',
     promptDeleted: '提示詞已刪除',
     deleteFailed: '刪除失敗',
-    required: '*'
+    required: '*',
+    extensionReloaded: '擴充功能已重新載入，請刷新頁面 (F5) 以使用最新版本'
   },
   'en': {
     promptNotInserted: 'Input box not found, please ensure you are on ChatGPT conversation page',
@@ -83,7 +84,8 @@ const i18nMessages = {
     confirmDelete: 'Are you sure you want to delete this prompt?',
     promptDeleted: 'Prompt deleted',
     deleteFailed: 'Delete failed',
-    required: '*'
+    required: '*',
+    extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version'
   }
 };
 
@@ -94,6 +96,18 @@ function t(key, params = {}) {
     text = text.replace(`{${param}}`, params[param]);
   });
   return text;
+}
+
+/**
+ * 檢查擴充功能 context 是否有效
+ */
+function isExtensionContextValid() {
+  try {
+    // 嘗試訪問 chrome.runtime.id，如果 context 失效會拋出錯誤
+    return chrome.runtime?.id !== undefined;
+  } catch (error) {
+    return false;
+  }
 }
 
 // 初始化語言設定
@@ -361,8 +375,18 @@ async function togglePromptPanel() {
  */
 async function createPromptPanel() {
   // 從 storage 載入提示詞
-  const result = await chrome.storage.local.get('prompts');
-  promptsData = result.prompts || [];
+  try {
+    const result = await chrome.storage.local.get('prompts');
+    promptsData = result.prompts || [];
+  } catch (error) {
+    // Extension context invalidated - 擴充功能已重新載入
+    if (error.message.includes('Extension context invalidated')) {
+      showNotification(t('extensionReloaded'), 'warning');
+      return;
+    }
+    console.error('載入提示詞失敗:', error);
+    promptsData = [];
+  }
 
   // 找到輸入框容器
   const inputContainer = findInputContainer();
@@ -660,7 +684,10 @@ async function incrementUsageCount(id) {
       await chrome.storage.local.set({ prompts });
     }
   } catch (error) {
-    console.error('更新使用次數失敗:', error);
+    // 靜默處理 extension context invalidated 錯誤
+    if (!error.message.includes('Extension context invalidated')) {
+      console.error('更新使用次數失敗:', error);
+    }
   }
 }
 
