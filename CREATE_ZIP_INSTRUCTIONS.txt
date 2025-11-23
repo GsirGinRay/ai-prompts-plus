@@ -1,0 +1,78 @@
+========================================
+Chrome Web Store 提交 ZIP 檔案製作指南
+========================================
+
+請按照以下步驟創建正確的 ZIP 檔案：
+
+第一步：創建臨時資料夾
+------------------------
+1. 在桌面創建新資料夾：ChatGPT-Prompt-Manager-Submit
+2. 進入這個新資料夾
+
+第二步：複製必要檔案
+------------------------
+從 GPTprompt 資料夾複製以下檔案到新資料夾：
+
+【JavaScript 檔案】
+✅ manifest.json
+✅ popup.js
+✅ content.js
+✅ background.js
+✅ storage.js
+✅ i18n.js
+✅ default-prompts.js
+
+【HTML/CSS 檔案】
+✅ popup.html
+✅ popup.css
+✅ content.css
+
+【圖示資料夾】
+✅ icons/ （整個資料夾，包含所有 .png 檔案）
+
+❌ 不要複製任何 .md 檔案！
+❌ 不要複製 .vscode 資料夾！
+
+第三步：檢查檔案結構
+------------------------
+你的新資料夾應該看起來像這樣：
+
+ChatGPT-Prompt-Manager-Submit/
+├── manifest.json
+├── popup.html
+├── popup.js
+├── popup.css
+├── content.js
+├── content.css
+├── background.js
+├── storage.js
+├── i18n.js
+├── default-prompts.js
+└── icons/
+    ├── icon16.png
+    ├── icon48.png
+    └── icon128.png
+
+總共：10 個檔案 + 1 個 icons 資料夾
+
+第四步：創建 ZIP 檔案
+------------------------
+1. 選取新資料夾內的【所有檔案和資料夾】
+2. 按右鍵 → 「傳送到」→ 「壓縮的 (zipped) 資料夾」
+3. 將 ZIP 檔案命名為：chatgpt-prompt-manager.zip
+
+⚠️ 重要：不要壓縮整個外層資料夾，要壓縮裡面的檔案！
+   正確：ZIP 內直接是 manifest.json、popup.js 等檔案
+   錯誤：ZIP 內有一個資料夾，再裡面才是檔案
+
+第五步：驗證 ZIP 檔案
+------------------------
+1. 解壓縮你剛創建的 ZIP 檔案
+2. 確認解壓後直接看到 manifest.json（不是資料夾）
+3. 確認檔案數量正確（10 個檔案 + icons 資料夾）
+4. 確認沒有 .md 檔案
+5. 確認沒有 .vscode 資料夾
+
+完成！你的 ZIP 檔案已經準備好提交了。
+
+========================================

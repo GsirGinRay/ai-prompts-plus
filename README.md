@@ -62,6 +62,16 @@ with approximately [word_count] words.
 
 MIT License - see [LICENSE](LICENSE) file for details
 
+### Privacy Policy
+
+This extension does not collect any personal data.
+
+- **Local Storage Only**: All prompts and settings are stored locally on your device using Chrome's local storage API
+- **No Data Collection**: We do not collect, transmit, or share any user data
+- **No Analytics**: No tracking, analytics, or telemetry is implemented
+- **No External Servers**: All functionality works entirely offline after installation
+- **Open Source**: The code is publicly available for review
+
 ### Contributing
 
 Issues and Pull Requests are welcome!
@@ -126,6 +136,16 @@ Issues and Pull Requests are welcome!
 ### 授權條款
 
 MIT License - 詳見 [LICENSE](LICENSE) 檔案
+
+### 隱私權政策
+
+本擴充功能不會收集任何個人資料。
+
+- **僅本機儲存**：所有提示詞和設定都儲存在您的裝置本機，使用 Chrome 的本地儲存 API
+- **不收集資料**：我們不會收集、傳輸或分享任何使用者資料
+- **無追蹤分析**：未實作任何追蹤、分析或遙測功能
+- **無外部伺服器**：所有功能在安裝後完全離線運作
+- **開放原始碼**：程式碼公開可供檢視
 
 ### 貢獻
 
