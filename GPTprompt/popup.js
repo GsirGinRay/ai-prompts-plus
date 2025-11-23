@@ -31,9 +31,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   await I18n.init();
   I18n.updatePageTranslations();
 
+  // 檢查是否是第一次使用，如果是則載入預設提示詞
+  await initializeDefaultPrompts();
+
   await loadPrompts();
   setupEventListeners();
 });
+
+/**
+ * 初始化預設提示詞（僅在第一次使用時）
+ */
+async function initializeDefaultPrompts() {
+  try {
+    const result = await chrome.storage.local.get(['prompts', 'defaultPromptsLoaded']);
+
+    // 如果已經載入過預設提示詞，或者已經有提示詞了，就不再載入
+    if (result.defaultPromptsLoaded || (result.prompts && result.prompts.length > 0)) {
+      return;
+    }
+
+    // 根據當前語言獲取對應的預設提示詞
+    const defaultPrompts = DefaultPrompts.getDefaultPrompts(I18n.currentLang);
+
+    // 儲存預設提示詞
+    await chrome.storage.local.set({
+      prompts: defaultPrompts,
+      defaultPromptsLoaded: true
+    });
+
+    console.log(`已載入 ${defaultPrompts.length} 個預設提示詞 (${I18n.currentLang})`);
+  } catch (error) {
+    console.error('載入預設提示詞失敗:', error);
+  }
+}
 
 /**
  * 設置事件監聽器
