@@ -141,9 +141,28 @@ async function handleLanguageSwitch() {
  * 處理載入預設提示詞
  */
 async function handleLoadDefaultPrompts() {
+  // 詢問用戶要載入哪種語言的預設提示詞
+  const browserLang = navigator.language || navigator.userLanguage || 'en';
+  const isChineseBrowser = browserLang.startsWith('zh');
+
+  let loadLang = I18n.currentLang;
+
+  // 如果界面語言和瀏覽器語言不一致，詢問用戶
+  const needAsk = (I18n.currentLang === 'zh-TW' && !isChineseBrowser) ||
+                  (I18n.currentLang === 'en' && isChineseBrowser);
+
+  if (needAsk) {
+    const askMessage = I18n.currentLang === 'zh-TW'
+      ? '您的瀏覽器是英文，要載入英文版預設提示詞嗎？\n\n點擊「確定」載入英文版\n點擊「取消」載入中文版'
+      : 'Your browser is Chinese, load Chinese prompts?\n\nOK = Chinese version\nCancel = English version';
+
+    const useEnglish = confirm(askMessage);
+    loadLang = useEnglish ? 'en' : 'zh-TW';
+  }
+
   const message = I18n.currentLang === 'zh-TW'
-    ? '要載入 10 個預設提示詞嗎？\n\n這不會刪除你現有的提示詞，會合併在一起。'
-    : 'Load 10 default prompts?\n\nThis will not delete your existing prompts, they will be merged.';
+    ? `要載入 10 個預設提示詞嗎？(${loadLang === 'zh-TW' ? '中文版' : '英文版'})\n\n這不會刪除你現有的提示詞，會合併在一起。`
+    : `Load 10 default prompts? (${loadLang === 'zh-TW' ? 'Chinese' : 'English'} version)\n\nThis will not delete your existing prompts, they will be merged.`;
 
   if (!confirm(message)) {
     return;
@@ -155,7 +174,7 @@ async function handleLoadDefaultPrompts() {
     const existingPrompts = result.prompts || [];
 
     // 獲取對應語言的預設提示詞
-    const defaultPrompts = DefaultPrompts.getDefaultPrompts(I18n.currentLang);
+    const defaultPrompts = DefaultPrompts.getDefaultPrompts(loadLang);
 
     // 檢查哪些預設提示詞還沒有（根據 ID）
     const existingIds = new Set(existingPrompts.map(p => p.id));
