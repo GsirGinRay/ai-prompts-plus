@@ -1,45 +1,22 @@
-# IDE and Editor directories
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+# 臨時資料夾
+*_submit/
+*_temp/
+temp/
 
-# OS files
+# ZIP 檔案
+*.zip
+
+# 系統檔案
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Archive files
-*.zip
-*.rar
-*.7z
-*.tar.gz
+# IDE 設定
+.vscode/
+.idea/
 
-# Log files
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Temporary files
-*.tmp
-*.temp
-*~
-
-# Node modules (if you add npm in the future)
+# Node modules (如果未來使用)
 node_modules/
-package-lock.json
-yarn.lock
 
-# Build directories (if you add build process)
-dist/
-build/
-
-# Environment files
+# 環境變數
 .env
 .env.local
-.env.*.local
-
-# Chrome extension specific
-*.crx
-*.pem
