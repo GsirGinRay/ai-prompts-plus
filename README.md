@@ -8,7 +8,7 @@
 
 ## English
 
-A powerful Chrome extension for managing and quickly using AI prompt templates across multiple platforms (ChatGPT, Claude, Gemini) with variable replacement and fast insertion features.
+A powerful Chrome extension for managing and quickly using ChatGPT prompt templates with variable replacement and fast insertion features.
 
 ### Features
 
@@ -95,7 +95,7 @@ Issues and Pull Requests are welcome!
 
 ## 繁體中文
 
-一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用多平台 AI 提示詞模板（ChatGPT、Claude、Gemini），支援自訂變數和快速插入功能。
+一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用 ChatGPT 提示詞模板，支援自訂變數和快速插入功能。
 
 ### 主要功能
 
