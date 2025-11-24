@@ -19,6 +19,19 @@ A powerful Chrome extension for managing and quickly using AI prompt templates a
 - **Quick Access**: Floating button on ChatGPT pages for instant access
 - **Usage Statistics**: Track how often you use each prompt
 
+### 🎁 Get More Prompts
+
+Want access to **100+ premium prompt templates**?
+
+Join **[AI Investment Academy+](https://www.skool.com/ai-investment-academy-plus)** and get:
+- 📚 **100+ Advanced Prompt Library** (regularly updated)
+- 🎯 **Industry-Specific Templates** (Marketing, Sales, Management, etc.)
+- 🔥 **Latest AI Application Techniques**
+- 👥 **Community Support & Collaboration**
+- 🎓 **Online Courses & Workshops**
+
+**[→ Join AI Investment Academy+ Now](https://www.skool.com/ai-investment-academy-plus)**
+
 ### Installation
 
 #### From Chrome Web Store
@@ -92,6 +105,19 @@ Issues and Pull Requests are welcome!
 - **匯入/匯出**：備份和分享您的提示詞為 JSON 檔案
 - **快速訪問**：ChatGPT 頁面浮動按鈕，一鍵開啟
 - **使用統計**：追蹤每個提示詞的使用次數
+
+### 🎁 獲取更多提示詞
+
+想要存取 **100+ 進階提示詞模板**？
+
+加入 **[AI投資學院+](https://www.skool.com/ai-investment-academy-plus)** 即可獲得：
+- 📚 **100+ 進階提示詞庫**（定期更新）
+- 🎯 **各產業專用模板**（行銷、銷售、管理等）
+- 🔥 **最新 AI 應用技巧**
+- 👥 **社群成員互助交流**
+- 🎓 **線上課程與工作坊**
+
+**[→ 立即加入 AI投資學院+](https://www.skool.com/ai-investment-academy-plus)**
 
 ### 安裝方式
 
