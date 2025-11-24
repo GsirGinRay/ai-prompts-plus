@@ -20,3 +20,23 @@ node_modules/
 # 環境變數
 .env
 .env.local
+
+# 內部開發文檔
+CHROME_STORE_SUBMISSION_CHECKLIST.md
+CREATE_ZIP_INSTRUCTIONS.txt
+STORE_LISTING.md
+GPTprompt/BUSINESS_MODEL.md
+GPTprompt/CHECKLIST.md
+GPTprompt/INSTALLATION.md
+GPTprompt/PROJECT_SUMMARY.md
+GPTprompt/QUICK_START.md
+GPTprompt/README.md
+
+# Claude Code 設定
+.claude/
+
+# 舊版資料
+舊版/
+
+# 截圖（本地使用）
+screenshot/
