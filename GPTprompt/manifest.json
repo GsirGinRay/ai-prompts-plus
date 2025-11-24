@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT Prompt Manager",
+  "name": "AI 提示詞+",
   "version": "1.0.0",
-  "description": "Manage and quickly use ChatGPT prompt templates with variable support and quick insertion",
+  "description": "AI投資學院+ 推薦工具｜高效管理多平台 AI 提示詞，支援 ChatGPT、Claude、Gemini，變數替換、快速插入",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

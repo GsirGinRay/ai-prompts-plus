@@ -1,4 +1,6 @@
-# ChatGPT Prompt Manager
+# AI 提示詞+ (AI Prompts+)
+
+**AI投資學院+ 官方推薦工具**
 
 [English](#english) | [繁體中文](#繁體中文)
 
@@ -6,7 +8,7 @@
 
 ## English
 
-A powerful Chrome extension for managing and quickly using ChatGPT prompt templates with variable replacement and fast insertion features.
+A powerful Chrome extension for managing and quickly using AI prompt templates across multiple platforms (ChatGPT, Claude, Gemini) with variable replacement and fast insertion features.
 
 ### Features
 
@@ -26,7 +28,7 @@ Coming soon...
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/GsirGinRay/chatgpt-prompt-manager.git
+   git clone https://github.com/GsirGinRay/ai-prompts-plus.git
    ```
 
 2. Open Chrome and navigate to `chrome://extensions/`
@@ -80,7 +82,7 @@ Issues and Pull Requests are welcome!
 
 ## 繁體中文
 
-一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用 ChatGPT 提示詞模板，支援自訂變數和快速插入功能。
+一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用多平台 AI 提示詞模板（ChatGPT、Claude、Gemini），支援自訂變數和快速插入功能。
 
 ### 主要功能
 
@@ -100,7 +102,7 @@ Issues and Pull Requests are welcome!
 
 1. 複製此專案：
    ```bash
-   git clone https://github.com/GsirGinRay/chatgpt-prompt-manager.git
+   git clone https://github.com/GsirGinRay/ai-prompts-plus.git
    ```
 
 2. 開啟 Chrome 瀏覽器，前往 `chrome://extensions/`
