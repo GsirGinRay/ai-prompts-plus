@@ -8,15 +8,16 @@
 
 ## English
 
-A powerful Chrome extension for managing and quickly using ChatGPT prompt templates with variable replacement and fast insertion features.
+A powerful Chrome extension for managing and quickly using AI prompt templates with variable replacement and fast insertion features. **Now supports both ChatGPT and Google Gemini!**
 
 ### Features
 
+- **Multi-Platform Support**: Works seamlessly on both ChatGPT and Google Gemini
 - **Prompt Management**: Add, edit, delete prompt templates with categorization and tagging
 - **Variable Replacement**: Use `[variable_name]` format for dynamic content
 - **Multi-language Support**: Switch between Traditional Chinese and English
 - **Import/Export**: Backup and share your prompts as JSON files
-- **Quick Access**: Floating button on ChatGPT pages for instant access
+- **Quick Access**: Floating button on AI chat pages for instant access
 - **Usage Statistics**: Track how often you use each prompt
 
 ### 🎁 Get More Prompts
@@ -50,13 +51,13 @@ Coming soon...
 
 4. Click "Load unpacked" and select the `GPTprompt` folder
 
-5. Visit [ChatGPT](https://chat.openai.com) and start using the extension!
+5. Visit [ChatGPT](https://chat.openai.com) or [Google Gemini](https://gemini.google.com) and start using the extension!
 
 ### Usage
 
 1. **Add a Prompt**: Click the extension icon and add your prompt template
 2. **Use Variables**: Insert `[topic]`, `[audience]`, etc. in your prompts
-3. **Quick Insert**: Click on any prompt to auto-fill the ChatGPT input
+3. **Quick Insert**: Click on any prompt to auto-fill the AI chat input (works on both ChatGPT and Gemini)
 4. **Language Switch**: Toggle between English and Traditional Chinese in settings
 
 ### Example Prompts
@@ -95,15 +96,16 @@ Issues and Pull Requests are welcome!
 
 ## 繁體中文
 
-一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用 ChatGPT 提示詞模板，支援自訂變數和快速插入功能。
+一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用 AI 提示詞模板，支援自訂變數和快速插入功能。**現已支援 ChatGPT 和 Google Gemini！**
 
 ### 主要功能
 
+- **多平台支援**：同時支援 ChatGPT 和 Google Gemini，無縫切換使用
 - **提示詞管理**：新增、編輯、刪除提示詞模板，支援分類和標籤
 - **變數替換**：使用 `[變數名稱]` 格式標記可替換內容
 - **多語言支援**：繁體中文與英文介面自由切換
 - **匯入/匯出**：備份和分享您的提示詞為 JSON 檔案
-- **快速訪問**：ChatGPT 頁面浮動按鈕，一鍵開啟
+- **快速訪問**：AI 對話頁面浮動按鈕，一鍵開啟
 - **使用統計**：追蹤每個提示詞的使用次數
 
 ### 🎁 獲取更多提示詞
@@ -137,13 +139,13 @@ Issues and Pull Requests are welcome!
 
 4. 點擊「載入未封裝項目」，選擇 `GPTprompt` 資料夾
 
-5. 前往 [ChatGPT](https://chat.openai.com) 開始使用！
+5. 前往 [ChatGPT](https://chat.openai.com) 或 [Google Gemini](https://gemini.google.com) 開始使用！
 
 ### 使用說明
 
 1. **新增提示詞**：點擊擴充功能圖示，新增您的提示詞模板
 2. **使用變數**：在提示詞中插入 `[主題]`、`[受眾]` 等變數
-3. **快速插入**：點擊任何提示詞即可自動填入 ChatGPT 輸入框
+3. **快速插入**：點擊任何提示詞即可自動填入 AI 對話輸入框（ChatGPT 和 Gemini 都支援）
 4. **語言切換**：在設定中切換繁體中文與英文介面
 
 ### 提示詞範例

@@ -7,7 +7,65 @@
 let promptsData = [];
 let currentPrompt = null;
 let promptPanel = null;
+let promptBackdrop = null;
 let currentLang = 'zh-TW';
+let currentPlatform = null; // 'chatgpt' 或 'gemini'
+
+// 平台配置
+const PLATFORMS = {
+  CHATGPT: 'chatgpt',
+  GEMINI: 'gemini'
+};
+
+// 平台特定的選擇器配置
+const PLATFORM_SELECTORS = {
+  [PLATFORMS.CHATGPT]: {
+    textarea: [
+      'textarea[data-id="root"]',
+      '#prompt-textarea',
+      'textarea[placeholder*="Message"]',
+      'textarea[placeholder*="Send a message"]',
+      'textarea[placeholder*="傳送訊息"]',
+      'div[contenteditable="true"]',
+      'textarea'
+    ],
+    sendButton: [
+      'button[data-testid="send-button"]',
+      'button[data-testid="fruitjuice-send-button"]',
+      'button[aria-label*="Send"]',
+      'button[aria-label*="送出"]',
+      'form button[type="submit"]',
+      'button svg[data-icon="paper-plane"]'
+    ]
+  },
+  [PLATFORMS.GEMINI]: {
+    textarea: [
+      'div.ql-editor[contenteditable="true"][role="textbox"]',
+      'div[contenteditable="true"][role="textbox"]',
+      'div.ql-editor.textarea[contenteditable="true"]',
+      'rich-textarea div[contenteditable="true"]'
+    ],
+    sendButton: [
+      'button.send-button',
+      'button[aria-label*="傳送"]',
+      'button[aria-label*="Send"]',
+      'button.submit'
+    ]
+  }
+};
+
+/**
+ * 檢測當前平台
+ */
+function detectPlatform() {
+  const hostname = window.location.hostname;
+  if (hostname.includes('openai.com') || hostname.includes('chatgpt.com')) {
+    return PLATFORMS.CHATGPT;
+  } else if (hostname.includes('gemini.google.com')) {
+    return PLATFORMS.GEMINI;
+  }
+  return null;
+}
 
 // 翻譯文本
 const i18nMessages = {
@@ -46,6 +104,11 @@ const i18nMessages = {
     confirmDelete: '確定要刪除這個提示詞嗎？',
     promptDeleted: '提示詞已刪除',
     deleteFailed: '刪除失敗',
+    pin: '置頂',
+    unpin: '取消置頂',
+    pinned: '已置頂',
+    unpinned: '已取消置頂',
+    pinFailed: '置頂失敗',
     required: '*',
     extensionReloaded: '擴充功能已重新載入，請刷新頁面 (F5) 以使用最新版本'
   },
@@ -84,6 +147,11 @@ const i18nMessages = {
     confirmDelete: 'Are you sure you want to delete this prompt?',
     promptDeleted: 'Prompt deleted',
     deleteFailed: 'Delete failed',
+    pin: 'Pin',
+    unpin: 'Unpin',
+    pinned: 'Pinned',
+    unpinned: 'Unpinned',
+    pinFailed: 'Pin failed',
     required: '*',
     extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version'
   }
@@ -134,19 +202,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * 插入提示詞到 ChatGPT 輸入框
+ * 插入提示詞到輸入框（支援多平台）
  */
 function insertPromptToTextarea(content) {
-  // ChatGPT 的輸入框選擇器（可能需要根據頁面更新調整）
-  const selectors = [
-    'textarea[data-id="root"]', // 新版 ChatGPT
-    '#prompt-textarea',
-    'textarea[placeholder*="Message"]',
-    'textarea[placeholder*="Send a message"]',
-    'textarea[placeholder*="傳送訊息"]',
-    'div[contenteditable="true"]', // 可編輯 div
-    'textarea',
-  ];
+  // 獲取當前平台的選擇器
+  const platform = currentPlatform || detectPlatform();
+  const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
 
   let textarea = null;
 
@@ -160,7 +221,7 @@ function insertPromptToTextarea(content) {
   }
 
   if (!textarea) {
-    console.error('找不到 ChatGPT 輸入框');
+    console.error(`找不到 ${platform} 輸入框`);
     showNotification(t('promptNotInserted'), 'error');
     return;
   }
@@ -209,22 +270,16 @@ function insertPromptToTextarea(content) {
 }
 
 /**
- * 點擊送出按鈕
+ * 點擊送出按鈕（支援多平台）
  */
 function clickSendButton() {
-  // ChatGPT 送出按鈕的選擇器
-  const buttonSelectors = [
-    'button[data-testid="send-button"]',
-    'button[data-testid="fruitjuice-send-button"]',
-    'button[aria-label*="Send"]',
-    'button[aria-label*="送出"]',
-    'form button[type="submit"]',
-    'button svg[data-icon="paper-plane"]',
-  ];
+  // 獲取當前平台的選擇器
+  const platform = currentPlatform || detectPlatform();
+  const buttonSelectors = platform ? PLATFORM_SELECTORS[platform].sendButton : [];
 
   for (const selector of buttonSelectors) {
     const button = document.querySelector(selector);
-    if (button && !button.disabled) {
+    if (button && !button.disabled && button.getAttribute('aria-disabled') !== 'true') {
       // 確保按鈕可見且可點擊
       const rect = button.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
@@ -332,9 +387,6 @@ function createQuickAccessButton() {
   // 檢查是否已存在按鈕
   if (document.getElementById('prompt-manager-quick-btn')) return;
 
-  // 找到輸入框容器
-  const inputContainer = findInputContainer();
-
   const button = document.createElement('button');
   button.id = 'prompt-manager-quick-btn';
   button.className = 'prompt-quick-btn';
@@ -350,10 +402,44 @@ function createQuickAccessButton() {
     togglePromptPanel();
   });
 
-  // 插入到輸入框的上方
-  if (inputContainer) {
-    inputContainer.parentElement.insertBefore(button, inputContainer);
+  // 嘗試找到輸入框容器
+  const inputContainer = findInputContainer();
+
+  if (inputContainer && inputContainer.parentElement) {
+    // 找到了輸入框容器
+    console.log('找到輸入框容器:', inputContainer.className);
+
+    // 對於 Gemini，需要找到更外層的父容器
+    // 向上查找，同時記錄路徑
+    let targetParent = inputContainer.parentElement;
+    let referenceNode = inputContainer; // 用於 insertBefore 的參考節點
+
+    // 如果是 Gemini 平台，只向上找 1 層
+    // 這樣按鈕會更貼近輸入框
+    const platform = currentPlatform || detectPlatform();
+    if (platform === PLATFORMS.GEMINI) {
+      // 只向上找一層：input-area -> input-area-container
+      if (targetParent.parentElement) {
+        console.log('向上一層到:', targetParent.parentElement.className);
+        referenceNode = targetParent; // 更新參考節點
+        targetParent = targetParent.parentElement;
+      }
+
+      // 不再繼續向上，保持在這一層
+      console.log('停止向上查找，使用當前層級');
+    }
+
+    console.log('最終選擇的插入位置:', targetParent.className);
+    console.log('參考節點（插入到它之前）:', referenceNode.className);
+
+    // 使用 insertBefore 將按鈕插入到 referenceNode 之前
+    targetParent.insertBefore(button, referenceNode);
+
+    console.log('✅ 按鈕已插入');
   } else {
+    // 找不到輸入框容器，使用固定定位作為備用方案
+    // 不顯示日誌，因為重試機制會繼續嘗試
+    button.classList.add('fixed-position');
     document.body.appendChild(button);
   }
 }
@@ -388,9 +474,6 @@ async function createPromptPanel() {
     promptsData = [];
   }
 
-  // 找到輸入框容器
-  const inputContainer = findInputContainer();
-
   // 建立面板容器
   promptPanel = document.createElement('div');
   promptPanel.id = 'prompt-manager-panel';
@@ -418,10 +501,13 @@ async function createPromptPanel() {
     </div>
   `;
 
-  // 插入到輸入框上方
-  if (inputContainer) {
-    inputContainer.parentElement.insertBefore(promptPanel, inputContainer);
+  // 找到按鈕，插入到按鈕下方（輸入框上方）
+  const button = document.getElementById('prompt-manager-quick-btn');
+  if (button && button.parentElement) {
+    // 插入到按鈕的下一個兄弟節點之前
+    button.parentElement.insertBefore(promptPanel, button.nextSibling);
   } else {
+    // 備用方案：插入到 body
     document.body.appendChild(promptPanel);
   }
 
@@ -480,24 +566,42 @@ async function createPromptPanel() {
 }
 
 /**
- * 找到輸入框容器
+ * 找到輸入框容器（支援多平台）
  */
 function findInputContainer() {
-  const selectors = [
-    'textarea[data-id="root"]',
-    '#prompt-textarea',
-    'textarea[placeholder*="Message"]',
-    'textarea[placeholder*="Send a message"]',
-    'textarea'
-  ];
+  const platform = currentPlatform || detectPlatform();
+
+  // Gemini 特殊處理：直接找 input-area 容器
+  if (platform === PLATFORMS.GEMINI) {
+    const containerSelectors = [
+      'div[data-node-type="input-area"]',
+      'div.input-area',
+      'div.text-input-field'
+    ];
+
+    for (const selector of containerSelectors) {
+      const container = document.querySelector(selector);
+      if (container) {
+        console.log('找到 Gemini 輸入框容器:', selector);
+        return container;
+      }
+    }
+  }
+
+  // 通用方法：找 textarea 然後找容器
+  const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
 
   for (const selector of selectors) {
     const textarea = document.querySelector(selector);
     if (textarea) {
       // 找到最接近的表單容器
-      return textarea.closest('form') || textarea.parentElement;
+      const container = textarea.closest('form') || textarea.parentElement;
+      console.log('通過 textarea 找到容器:', selector);
+      return container;
     }
   }
+
+  // 不顯示警告，因為重試機制會處理
   return null;
 }
 
@@ -509,18 +613,44 @@ function renderPromptList(prompts) {
     return `<div class="prompt-panel-empty">${t('noPrompts')}</div>`;
   }
 
-  return prompts.map(prompt => {
+  // 排序：置頂的在前，然後按使用次數排序
+  const sortedPrompts = [...prompts].sort((a, b) => {
+    // 先按置頂狀態排序
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    // 如果都置頂或都不置頂，按使用次數排序
+    return (b.usageCount || 0) - (a.usageCount || 0);
+  });
+
+  return sortedPrompts.map(prompt => {
     const variables = extractVariables(prompt.content);
+    const isPinned = prompt.pinned || false;
     return `
-      <div class="prompt-item" data-id="${prompt.id}">
+      <div class="prompt-item ${isPinned ? 'pinned' : ''}" data-id="${prompt.id}">
         <div class="prompt-item-header">
-          <div class="prompt-item-title">${escapeHtml(prompt.name)}</div>
+          <div class="prompt-item-title">
+            ${isPinned ? '<span class="pin-indicator">📌</span>' : ''}
+            ${escapeHtml(prompt.name)}
+          </div>
           <div class="prompt-item-actions">
             ${prompt.category ? `<span class="prompt-item-category">${escapeHtml(prompt.category)}</span>` : ''}
+            <button class="prompt-item-pin" data-id="${prompt.id}" title="${isPinned ? t('unpin') : t('pin')}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </button>
             <button class="prompt-item-edit" data-id="${prompt.id}" title="${t('edit')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="prompt-item-delete" data-id="${prompt.id}" title="${t('delete')}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
               </svg>
             </button>
           </div>
@@ -544,8 +674,10 @@ function bindPromptItemEvents() {
   items.forEach(item => {
     // 點擊項目使用提示詞
     item.addEventListener('click', (e) => {
-      // 如果點擊的是編輯按鈕，不執行使用提示詞
-      if (e.target.closest('.prompt-item-edit')) {
+      // 如果點擊的是按鈕，不執行使用提示詞
+      if (e.target.closest('.prompt-item-edit') ||
+          e.target.closest('.prompt-item-delete') ||
+          e.target.closest('.prompt-item-pin')) {
         return;
       }
       const id = item.dataset.id;
@@ -554,6 +686,16 @@ function bindPromptItemEvents() {
         usePrompt(prompt);
       }
     });
+
+    // 置頂按鈕事件
+    const pinBtn = item.querySelector('.prompt-item-pin');
+    if (pinBtn) {
+      pinBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = pinBtn.dataset.id;
+        await togglePinPrompt(id);
+      });
+    }
 
     // 編輯按鈕事件
     const editBtn = item.querySelector('.prompt-item-edit');
@@ -567,7 +709,69 @@ function bindPromptItemEvents() {
         }
       });
     }
+
+    // 刪除按鈕事件
+    const deleteBtn = item.querySelector('.prompt-item-delete');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = deleteBtn.dataset.id;
+        await deletePrompt(id);
+      });
+    }
   });
+}
+
+/**
+ * 切換提示詞置頂狀態
+ */
+async function togglePinPrompt(id) {
+  try {
+    const result = await chrome.storage.local.get('prompts');
+    const prompts = result.prompts || [];
+    const prompt = prompts.find(p => p.id === id);
+
+    if (prompt) {
+      prompt.pinned = !prompt.pinned;
+      await chrome.storage.local.set({ prompts });
+      promptsData = prompts;
+
+      // 重新渲染列表
+      document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
+      bindPromptItemEvents();
+
+      showNotification(prompt.pinned ? t('pinned') : t('unpinned'), 'success');
+    }
+  } catch (error) {
+    console.error('置頂失敗:', error);
+    showNotification(t('pinFailed'), 'error');
+  }
+}
+
+/**
+ * 刪除提示詞
+ */
+async function deletePrompt(id) {
+  if (!confirm(t('confirmDelete'))) {
+    return;
+  }
+
+  try {
+    const result = await chrome.storage.local.get('prompts');
+    const prompts = result.prompts || [];
+    const filtered = prompts.filter(p => p.id !== id);
+    await chrome.storage.local.set({ prompts: filtered });
+    promptsData = filtered;
+
+    // 重新渲染列表
+    document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
+    bindPromptItemEvents();
+
+    showNotification(t('promptDeleted'), 'success');
+  } catch (error) {
+    console.error('刪除失敗:', error);
+    showNotification(t('deleteFailed'), 'error');
+  }
 }
 
 /**
@@ -851,17 +1055,60 @@ function escapeHtml(text) {
 }
 
 /**
- * 初始化
+ * 初始化（帶重試機制）
  */
 async function init() {
+  // 檢測當前平台
+  currentPlatform = detectPlatform();
+  console.log('當前平台:', currentPlatform);
+
   // 初始化語言設定
   await initLanguage();
 
   // 等待頁面載入完成
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createQuickAccessButton);
+    document.addEventListener('DOMContentLoaded', () => {
+      retryCreateButton();
+    });
   } else {
-    createQuickAccessButton();
+    retryCreateButton();
+  }
+}
+
+/**
+ * 重試建立按鈕（最多嘗試 10 次）
+ */
+function retryCreateButton(attempts = 0) {
+  const maxAttempts = 10;
+  const delay = 1000; // 每次延遲 1000ms（1秒）
+
+  // 先移除舊按鈕（如果存在）
+  const oldButton = document.getElementById('prompt-manager-quick-btn');
+  if (oldButton) {
+    oldButton.remove();
+  }
+
+  createQuickAccessButton();
+
+  // 檢查按鈕是否成功插入到輸入框上方（而不是使用備用方案）
+  const button = document.getElementById('prompt-manager-quick-btn');
+  const isUsingFallback = button && button.classList.contains('fixed-position');
+
+  if (isUsingFallback && attempts < maxAttempts) {
+    // 如果使用了備用方案（固定定位），繼續重試
+    // 只在第一次和最後一次顯示日誌
+    if (attempts === 0) {
+      console.log('⏳ 等待輸入框載入...');
+    }
+    setTimeout(() => {
+      retryCreateButton(attempts + 1);
+    }, delay);
+  } else if (button && !isUsingFallback) {
+    console.log('✅ 按鈕已成功插入到輸入框上方！');
+  } else if (button && isUsingFallback && attempts >= maxAttempts) {
+    console.log('ℹ️ 使用固定定位（輸入框尚未完全載入）');
+  } else {
+    console.warn('❌ 按鈕建立失敗');
   }
 }
 
