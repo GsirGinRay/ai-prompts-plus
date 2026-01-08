@@ -424,6 +424,14 @@ function showVariableModal(variables) {
     container.appendChild(div);
   });
 
+  // 功能1：使用事件委託，在 container 上監聽 Enter 鍵
+  container.onkeydown = function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleInsertPrompt();
+    }
+  };
+
   variableModal.style.display = 'flex';
   const firstInput = container.querySelector('input');
   if (firstInput) firstInput.focus();
@@ -463,7 +471,11 @@ async function insertToPage(content) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (tab.url && (tab.url.includes('chat.openai.com') || tab.url.includes('chatgpt.com'))) {
+    if (tab.url && (tab.url.includes('chat.openai.com') || 
+        tab.url.includes('chatgpt.com') || 
+        tab.url.includes('gemini.google.com') ||
+        tab.url.includes('claude.ai') ||
+        tab.url.includes('grok.com'))) {
       await chrome.tabs.sendMessage(tab.id, {
         action: 'insertPrompt',
         content: content

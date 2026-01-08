@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI 提示詞+",
-  "version": "2.0.1",
-  "description": "AI投資學院+ 推薦工具｜支援 ChatGPT 和 Gemini 的提示詞管理工具，支援變數替換、快速插入、雙語介面",
+  "version": "2.0.2",
+  "description": "AI投資學院+ 推薦工具｜支援 ChatGPT、Claude、Gemini、Grok 的提示詞管理工具，支援變數替換、快速插入、雙語介面",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -23,14 +23,20 @@
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
-    "https://gemini.google.com/*"
+    "https://gemini.google.com/*",
+    "https://*.claude.ai/*",
+    "https://grok.com/*",
+    "https://*.grok.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
-        "https://gemini.google.com/*"
+        "https://gemini.google.com/*",
+        "https://*.claude.ai/*",
+        "https://grok.com/*",
+        "https://*.grok.com/*"
       ],
       "js": ["content.js"],
       "css": ["content.css"]

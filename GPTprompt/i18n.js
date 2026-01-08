@@ -61,8 +61,8 @@ const I18n = {
       exportFailed: '匯出失敗，請重試',
       importSuccess: '成功匯入 {count} 個提示詞',
       importFailed: '匯入失敗，請確認檔案格式正確',
-      insertFailed: '插入失敗，請確保您在 ChatGPT 頁面',
-      notChatGPTPage: '請在 ChatGPT 頁面使用此功能',
+      insertFailed: '插入失敗，請確保您在 AI 對話頁面',
+      notChatGPTPage: '請在 AI 對話頁面使用此功能',
       fillVariable: '請填寫 {variable}',
       enterVariable: '請輸入 {variable}',
 
@@ -127,8 +127,8 @@ const I18n = {
       exportFailed: 'Export failed, please try again',
       importSuccess: 'Successfully imported {count} prompt(s)',
       importFailed: 'Import failed, please check file format',
-      insertFailed: 'Insert failed, please ensure you are on ChatGPT page',
-      notChatGPTPage: 'Please use this feature on ChatGPT page',
+      insertFailed: 'Insert failed, please ensure you are on an AI conversation page',
+      notChatGPTPage: 'Please use this feature on an AI conversation page',
       fillVariable: 'Please fill in {variable}',
       enterVariable: 'Enter {variable}',
 

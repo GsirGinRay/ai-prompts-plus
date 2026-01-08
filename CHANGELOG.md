@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2025-01-08
+
+### Added
+- **Claude 支援**：新增支援 Anthropic Claude AI 平台 (claude.ai)
+- **Grok 支援**：新增支援 xAI Grok 平台 (grok.com)
+- **變數輸入 Enter 鍵支援**：在變數輸入框按 Enter 鍵可直接執行提示詞
+
+### Changed
+- **平台支援擴展**：從原本的 ChatGPT + Gemini，擴展到支援四個 AI 平台
+- **多語言提示更新**：將「ChatGPT」相關提示改為通用「AI 對話頁面」
+
+### Technical
+- 新增 Claude 和 Grok 平台檢測和選擇器配置
+- 優化按鈕插入邏輯，適應不同平台的 DOM 結構
+- 定期檢查機制，確保按鈕在動態頁面中持續存在
+- 更新 `manifest.json` 的 host_permissions 和 content_scripts.matches
+
+---
+
 ## [2.0.0] - 2024-11-26
 
 ### Added

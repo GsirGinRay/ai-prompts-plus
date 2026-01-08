@@ -14,7 +14,9 @@ let currentPlatform = null; // 'chatgpt' 或 'gemini'
 // 平台配置
 const PLATFORMS = {
   CHATGPT: 'chatgpt',
-  GEMINI: 'gemini'
+  GEMINI: 'gemini',
+  CLAUDE: 'claude',
+  GROK: 'grok'
 };
 
 // 平台特定的選擇器配置
@@ -51,6 +53,44 @@ const PLATFORM_SELECTORS = {
       'button[aria-label*="Send"]',
       'button.submit'
     ]
+  },
+  [PLATFORMS.CLAUDE]: {
+    textarea: [
+      '.tiptap.ProseMirror[data-testid="chat-input"]',
+      'div[contenteditable="true"][role="textbox"].tiptap',
+      '[data-testid="chat-input"]',
+      'div.ProseMirror[contenteditable="true"]'
+    ],
+    sendButton: [
+      'button[aria-label="Send message"]',
+      'button[data-testid="send-button"]',
+      'button[type="submit"]',
+      '.Button_claude__c_hZy[aria-label*="Send"]'
+    ],
+    inputContainer: [
+      '.top-5.z-10.mx-auto.w-full.max-w-2xl',
+      '.flex.flex-col.bg-bg-000.mx-2',
+      '.chat-input-grid-container'
+    ]
+  },
+  [PLATFORMS.GROK]: {
+    textarea: [
+      'textarea[aria-label="Ask Grok anything"]',
+      'textarea.w-full.px-2',
+      '.query-bar textarea',
+      'textarea[dir="auto"]'
+    ],
+    sendButton: [
+      'button[aria-label="Submit"]',
+      'button[type="submit"]',
+      'button[aria-label*="Send"]'
+    ],
+    inputContainer: [
+      'form.w-full.text-base',
+      'div.w-full.mb-3',
+      '.query-bar',
+      '.flex.flex-col.gap-0.justify-center'
+    ]
   }
 };
 
@@ -63,6 +103,10 @@ function detectPlatform() {
     return PLATFORMS.CHATGPT;
   } else if (hostname.includes('gemini.google.com')) {
     return PLATFORMS.GEMINI;
+  } else if (hostname.includes('claude.ai')) {
+    return PLATFORMS.CLAUDE;
+  } else if (hostname.includes('grok.com')) {
+    return PLATFORMS.GROK;
   }
   return null;
 }
@@ -70,7 +114,7 @@ function detectPlatform() {
 // 翻譯文本
 const i18nMessages = {
   'zh-TW': {
-    promptNotInserted: '找不到輸入框，請確認您在 ChatGPT 對話頁面',
+    promptNotInserted: '找不到輸入框，請確認您在 AI 對話頁面',
     promptInserted: '提示詞已插入並送出',
     prompts: '提示詞',
     openPromptManager: '開啟提示詞管理器',
@@ -110,10 +154,11 @@ const i18nMessages = {
     unpinned: '已取消置頂',
     pinFailed: '置頂失敗',
     required: '*',
-    extensionReloaded: '擴充功能已重新載入，請刷新頁面 (F5) 以使用最新版本'
+    extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version',
+    platformNotSupported: 'Unsupported AI platform'
   },
   'en': {
-    promptNotInserted: 'Input box not found, please ensure you are on ChatGPT conversation page',
+    promptNotInserted: 'Input box not found, please ensure you are on an AI conversation page',
     promptInserted: 'Prompt inserted and sent',
     prompts: 'Prompts',
     openPromptManager: 'Open Prompt Manager',
@@ -228,7 +273,33 @@ function insertPromptToTextarea(content) {
 
   // 如果是 contenteditable div
   if (textarea.getAttribute('contenteditable') === 'true') {
-    textarea.innerText = content;
+    // 獲取選取範圍
+    const selection = window.getSelection();
+    let inserted = false;
+
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      
+      // 如果選取範圍在輸入框內，插入到選取位置
+      if (textarea.contains(range.commonAncestorContainer)) {
+        range.deleteContents();
+        const textNode = document.createTextNode(content);
+        range.insertNode(textNode);
+        
+        // 移動游標到插入內容後面
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        inserted = true;
+      }
+    }
+
+    // 如果沒有插入（沒有選取範圍或選取範圍不在輸入框內），追加到末尾
+    if (!inserted) {
+      textarea.innerText = textarea.innerText + content;
+    }
+
     textarea.focus();
 
     // 觸發 input 事件
@@ -292,7 +363,8 @@ function clickSendButton() {
 
   // 如果找不到按鈕，嘗試使用 Enter 鍵
   const textarea = document.querySelector('textarea[data-id="root"]') ||
-                   document.querySelector('textarea');
+                   document.querySelector('textarea') ||
+                   document.querySelector('.tiptap.ProseMirror');
   if (textarea) {
     const enterEvent = new KeyboardEvent('keydown', {
       key: 'Enter',
@@ -427,10 +499,143 @@ function createQuickAccessButton() {
 
       // 不再繼續向上，保持在這一層
       console.log('停止向上查找，使用當前層級');
+    } else if (platform === PLATFORMS.CLAUDE) {
+      // Claude 特殊處理：插入到對話內容和輸入框之間
+      // 新的 HTML 結構分析
+      
+      // 方法1：插入到 .top-5.z-10.mx-auto.w-full.max-w-2xl 容器內
+      const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
+      
+      if (claudeTopContainer) {
+        // 找到 Prompt categories 區域（ul.flex.flex-wrap）
+        const promptCategories = claudeTopContainer.querySelector('ul.flex.flex-wrap');
+        
+        if (promptCategories && claudeTopContainer.contains(promptCategories)) {
+          // 在 Prompt categories 之前插入按鈕
+          const targetParent = claudeTopContainer;
+          const referenceNode = promptCategories;
+          
+          // 確保按鈕有適當的樣式 - 跟輸入框一樣寬
+          button.style.marginBottom = '12px';
+          button.style.marginTop = '0';
+          button.style.marginLeft = 'auto';
+          button.style.marginRight = 'auto';
+          button.style.display = 'inline-flex';
+          button.style.position = 'relative';
+          button.style.width = '100%';
+          button.style.maxWidth = '42rem'; // 2xl = 42rem = 672px
+          button.style.justifyContent = 'center';
+          
+          targetParent.insertBefore(button, referenceNode);
+          console.log('Claude: 按鈕插入到 Prompt categories 之前');
+          return;
+        }
+        
+        // 備用：直接插入到容器最前面
+        const firstChild = claudeTopContainer.firstElementChild;
+        if (firstChild) {
+          button.style.marginBottom = '12px';
+          button.style.marginLeft = 'auto';
+          button.style.marginRight = 'auto';
+          button.style.display = 'inline-flex';
+          button.style.position = 'relative';
+          button.style.width = '100%';
+          button.style.maxWidth = '42rem';
+          button.style.justifyContent = 'center';
+          claudeTopContainer.insertBefore(button, firstChild);
+          console.log('Claude: 按鈕插入到容器最前面');
+          return;
+        }
+      }
+
+      // 方法2：舊的選擇器（向後兼容）
+      const inputArea = document.querySelector('.flex.flex-col.bg-bg-000.mx-2');
+      if (inputArea && inputArea.parentElement) {
+        const targetParent = inputArea.parentElement;
+        const referenceNode = inputArea;
+        
+        button.style.marginBottom = '12px';
+        button.style.marginTop = '0';
+        button.style.width = '100%';
+        button.style.maxWidth = '42rem';
+        button.style.marginLeft = 'auto';
+        button.style.marginRight = 'auto';
+        button.style.justifyContent = 'center';
+        targetParent.insertBefore(button, referenceNode);
+        console.log('Claude: 按鈕插入到輸入框容器之前（舊選擇器）');
+        return;
+      }
+
+      // 備用方案：使用固定定位
+      button.classList.add('fixed-position');
+      button.style.position = 'fixed';
+      button.style.bottom = '90px';
+      button.style.right = '30px';
+      button.style.top = 'auto';
+      button.style.zIndex = '9999';
+      document.body.appendChild(button);
+      console.log('Claude: 備用方案 - 使用固定定位按鈕');
+      return;
+    } else if (platform === PLATFORMS.GROK) {
+      // Grok 特殊處理：插入到 query-bar 對話框**外面**、輸入框上方
+      
+      // 找到 query-bar 容器
+      const queryBar = document.querySelector('.query-bar');
+      
+      if (queryBar) {
+        // 找到 query-bar 內部的第一個子元素（.w-full.ps-4.pe-2）
+        const firstChild = queryBar.firstElementChild;
+        
+        if (firstChild) {
+          // 在第一個子元素之前插入按鈕
+          // 這樣按鈕會在 query-bar 內部，但不在 .px-12 裡面
+          button.style.marginBottom = '4px';
+          button.style.marginTop = '0';
+          button.style.marginLeft = 'auto';
+          button.style.marginRight = 'auto';
+          button.style.display = 'inline-flex';
+          button.style.position = 'relative';
+          button.style.width = '100%';
+          button.style.maxWidth = 'breakout';  // 跟 query-bar 一樣的最大寬度
+          button.style.justifyContent = 'center';
+          
+          queryBar.insertBefore(button, firstChild);
+          console.log('Grok: 按鈕插入到 query-bar 內部第一個元素之前');
+          return;
+        }
+      }
+      
+      // 備用方法：找到外層容器
+      const grokInputContainer = document.querySelector('.flex.flex-col.gap-0.justify-center.w-full.relative.items-center');
+      if (grokInputContainer) {
+        const queryBar = grokInputContainer.querySelector('.query-bar');
+        if (queryBar) {
+          button.style.marginBottom = '4px';
+          button.style.width = '100%';
+          button.style.maxWidth = 'breakout';
+          button.style.marginLeft = 'auto';
+          button.style.marginRight = 'auto';
+          button.style.justifyContent = 'center';
+          grokInputContainer.insertBefore(button, queryBar);
+          console.log('Grok: 按鈕插入到 query-bar 之前');
+          return;
+        }
+      }
+
+      // 備用方案：使用固定定位
+      button.classList.add('fixed-position');
+      button.style.position = 'fixed';
+      button.style.bottom = '90px';
+      button.style.right = '30px';
+      button.style.top = 'auto';
+      button.style.zIndex = '9999';
+      document.body.appendChild(button);
+      console.log('Grok: 備用方案 - 使用固定定位按鈕');
+      return;
     }
 
     console.log('最終選擇的插入位置:', targetParent.className);
-    console.log('參考節點（插入到它之前）:', referenceNode.className);
+    console.log('參考節點（插入到它之前）:', referenceNode.className || referenceNode.tagName);
 
     // 使用 insertBefore 將按鈕插入到 referenceNode 之前
     targetParent.insertBefore(button, referenceNode);
@@ -570,6 +775,70 @@ async function createPromptPanel() {
  */
 function findInputContainer() {
   const platform = currentPlatform || detectPlatform();
+
+  // Claude 特殊處理
+  if (platform === PLATFORMS.CLAUDE) {
+    // 方法1：使用專用的 inputContainer 選擇器
+    const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
+    for (const selector of containerSelectors) {
+      const container = document.querySelector(selector);
+      if (container) {
+        console.log('找到 Claude 輸入框容器:', selector);
+        return container;
+      }
+    }
+
+    // 方法2：直接找 Claude 輸入框的主要容器（新的 HTML 結構）
+    const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
+    if (claudeTopContainer) {
+      console.log('找到 Claude 頂部容器');
+      return claudeTopContainer;
+    }
+
+    // 方法3：找 ProseMirror 編輯器
+    const proseMirror = document.querySelector('.tiptap.ProseMirror[data-testid="chat-input"]');
+    if (proseMirror) {
+      // 向上找三層找到主要容器
+      let parent = proseMirror.parentElement;
+      for (let i = 0; i < 3 && parent; i++) {
+        parent = parent.parentElement;
+      }
+      if (parent) {
+        console.log('通過 ProseMirror 找到 Claude 容器');
+        return parent;
+      }
+    }
+  }
+
+  // Grok 特殊處理
+  if (platform === PLATFORMS.GROK) {
+    // 方法1：使用專用的 inputContainer 選擇器
+    const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
+    for (const selector of containerSelectors) {
+      const container = document.querySelector(selector);
+      if (container) {
+        console.log('找到 Grok 輸入框容器:', selector);
+        return container;
+      }
+    }
+
+    // 方法2：直接找 Grok form
+    const grokForm = document.querySelector('form.w-full.text-base.flex.flex-col.gap-2.items-center.justify-center.relative.z-10.mt-2');
+    if (grokForm) {
+      console.log('找到 Grok 表單容器');
+      return grokForm;
+    }
+
+    // 方法3：找 textarea
+    const grokTextarea = document.querySelector('textarea[aria-label="Ask Grok anything"]');
+    if (grokTextarea) {
+      const parent = grokTextarea.parentElement;
+      if (parent) {
+        console.log('通過 Grok textarea 找到容器');
+        return parent.parentElement;
+      }
+    }
+  }
 
   // Gemini 特殊處理：直接找 input-area 容器
   if (platform === PLATFORMS.GEMINI) {
@@ -840,31 +1109,18 @@ function showVariableInputPanel(prompt, variables) {
 
   // 綁定插入按鈕
   variablePanel.querySelector('.prompt-insert-btn').addEventListener('click', () => {
-    const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
-    const values = {};
-    let hasError = false;
+    insertVariablePrompt();
+  });
 
-    inputs.forEach(input => {
-      const variable = input.dataset.variable;
-      const value = input.value.trim();
-      if (!value) {
-        input.style.borderColor = '#ef4444';
-        hasError = true;
-      } else {
-        input.style.borderColor = '';
-        values[variable] = value;
+  // 功能1：為所有變數輸入框添加 Enter 鍵事件監聽
+  const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
+  inputs.forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        insertVariablePrompt();
       }
     });
-
-    if (hasError) {
-      showNotification(t('fillAllVariables'), 'error');
-      return;
-    }
-
-    const finalContent = replaceVariables(prompt.content, values);
-    insertPromptToTextarea(finalContent);
-    incrementUsageCount(prompt.id);
-    togglePromptPanel();
   });
 
   // 聚焦第一個輸入框
@@ -872,6 +1128,40 @@ function showVariableInputPanel(prompt, variables) {
   if (firstInput) {
     setTimeout(() => firstInput.focus(), 100);
   }
+}
+
+/**
+ * 插入變數提示詞（供 Enter 鍵和按鈕使用）
+ */
+function insertVariablePrompt() {
+  const variablePanel = document.querySelector('.prompt-variable-panel');
+  if (!variablePanel) return;
+
+  const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
+  const values = {};
+  let hasError = false;
+
+  inputs.forEach(input => {
+    const variable = input.dataset.variable;
+    const value = input.value.trim();
+    if (!value) {
+      input.style.borderColor = '#ef4444';
+      hasError = true;
+    } else {
+      input.style.borderColor = '';
+      values[variable] = value;
+    }
+  });
+
+  if (hasError) {
+    showNotification(t('fillAllVariables'), 'error');
+    return;
+  }
+
+  const finalContent = replaceVariables(currentPrompt.content, values);
+  insertPromptToTextarea(finalContent);
+  incrementUsageCount(currentPrompt.id);
+  togglePromptPanel();
 }
 
 /**
@@ -1081,10 +1371,20 @@ async function init() {
 function retryCreateButton(attempts = 0) {
   const maxAttempts = 10;
   const delay = 1000; // 每次延遲 1000ms（1秒）
+  const platform = currentPlatform || detectPlatform();
 
   // 先移除舊按鈕（如果存在）
   const oldButton = document.getElementById('prompt-manager-quick-btn');
   if (oldButton) {
+    // 檢查按鈕是否在正確位置
+    const claudeInputContainer = document.querySelector('.flex.flex-col.bg-bg-000.mx-2');
+    const isInCorrectPosition = oldButton.parentElement === claudeInputContainer?.parentElement;
+
+    if (platform === PLATFORMS.CLAUDE && isInCorrectPosition) {
+      // Claude：按鈕已經在正確位置，不需要移除和重新創建
+      console.log('✅ Claude：按鈕已在正確位置');
+      return;
+    }
     oldButton.remove();
   }
 
@@ -1117,10 +1417,82 @@ init();
 
 // 監聽頁面變化（SPA 導航）
 let lastUrl = location.href;
-new MutationObserver(() => {
+new MutationObserver((mutations) => {
   const url = location.href;
   if (url !== lastUrl) {
     lastUrl = url;
     createQuickAccessButton();
+    return;
+  }
+
+  // Claude 特殊處理：檢查按鈕是否被移除
+  const button = document.getElementById('prompt-manager-quick-btn');
+  if (!button) {
+    // 按鈕被移除，嘗試重新創建
+    const platform = detectPlatform();
+    if (platform === PLATFORMS.CLAUDE) {
+      // Claude 頁面頻繁更新，延遲重試
+      setTimeout(() => {
+        const newButton = document.getElementById('prompt-manager-quick-btn');
+        if (!newButton) {
+          console.log('Claude: 按鈕被移除，嘗試重新創建...');
+          retryCreateButton();
+        }
+      }, 500);
+    }
   }
 }).observe(document.body, { subtree: true, childList: true });
+
+// Claude 專用：定期檢查按鈕是否還在，否則重新創建
+// Claude 的 React 會重新渲染 DOM，按鈕可能被移除，需要定期檢查
+if (detectPlatform() === PLATFORMS.CLAUDE) {
+  let isRecreating = false;
+  setInterval(() => {
+    if (isRecreating) return; // 防止同時多次創建
+    
+    const button = document.getElementById('prompt-manager-quick-btn');
+    if (!button) {
+      isRecreating = true;
+      console.log('Claude: 按鈕被移除，2秒後重新創建...');
+      
+      setTimeout(() => {
+        // 檢查 Claude 容器是否存在
+        const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
+        const promptCategories = document.querySelector('ul.flex.flex-wrap');
+        
+        if (claudeTopContainer || promptCategories) {
+          console.log('Claude: 重新創建按鈕');
+          retryCreateButton();
+        }
+        isRecreating = false;
+      }, 2000);
+    }
+  }, 3000);
+}
+
+// Grok 專用：定期檢查按鈕是否還在，否則重新創建
+// Grok 的頁面可能會動態更新
+if (detectPlatform() === PLATFORMS.GROK) {
+  let isRecreating = false;
+  setInterval(() => {
+    if (isRecreating) return; // 防止同時多次創建
+    
+    const button = document.getElementById('prompt-manager-quick-btn');
+    if (!button) {
+      isRecreating = true;
+      console.log('Grok: 按鈕被移除，2秒後重新創建...');
+      
+      setTimeout(() => {
+        // 檢查 Grok 容器是否存在
+        const grokForm = document.querySelector('form.w-full.text-base.flex.flex-col.gap-2.items-center.justify-center.relative.z-10.mt-2');
+        const grokInputContainer = document.querySelector('div.w-full.mb-3');
+        
+        if (grokForm || grokInputContainer) {
+          console.log('Grok: 重新創建按鈕');
+          retryCreateButton();
+        }
+        isRecreating = false;
+      }, 2000);
+    }
+  }, 3000);
+}
