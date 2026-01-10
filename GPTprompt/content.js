@@ -118,7 +118,7 @@ function detectPlatform() {
 const i18nMessages = {
   'zh-TW': {
     promptNotInserted: '找不到輸入框，請確認您在 AI 對話頁面',
-    promptInserted: '提示詞已插入並送出',
+    promptInserted: '提示詞已複製到剪貼簿',
     prompts: '提示詞',
     openPromptManager: '開啟提示詞管理器',
     promptManager: '提示詞管理器',
@@ -128,7 +128,7 @@ const i18nMessages = {
     noPrompts: '沒有提示詞，點擊「新增」按鈕建立第一個提示詞',
     edit: '編輯',
     back: '← 返回',
-    insertPrompt: '插入提示詞',
+    insertPrompt: '複製提示詞',
     enterValue: '請輸入 {variable}',
     fillAllVariables: '請填寫所有變數',
     completeCurrentOperation: '請先完成當前的操作',
@@ -167,7 +167,7 @@ const i18nMessages = {
   },
   'en': {
     promptNotInserted: 'Input box not found, please ensure you are on an AI conversation page',
-    promptInserted: 'Prompt inserted and sent',
+    promptInserted: 'Prompt copied to clipboard',
     prompts: 'Prompts',
     openPromptManager: 'Open Prompt Manager',
     promptManager: 'Prompt Manager',
@@ -177,7 +177,7 @@ const i18nMessages = {
     noPrompts: 'No prompts yet, click "Add" to create your first prompt',
     edit: 'Edit',
     back: '← Back',
-    insertPrompt: 'Insert Prompt',
+    insertPrompt: 'Copy Prompt',
     enterValue: 'Enter {variable}',
     fillAllVariables: 'Please fill all variables',
     completeCurrentOperation: 'Please complete current operation',
@@ -260,97 +260,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
- * 插入提示詞到輸入框（支援多平台）
+ * 複製提示詞到剪貼簿
  */
 function insertPromptToTextarea(content) {
-  // 獲取當前平台的選擇器
-  const platform = currentPlatform || detectPlatform();
-  const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
+  // 使用 Clipboard API 複製到剪貼簿
+  navigator.clipboard.writeText(content).then(() => {
+    // 顯示成功通知
+    showNotification(t('promptInserted'), 'success');
+  }).catch(err => {
+    // 如果 Clipboard API 失敗，使用備用方法
+    const textArea = document.createElement('textarea');
+    textArea.value = content;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
 
-  let textarea = null;
-
-  // 嘗試找到輸入框
-  for (const selector of selectors) {
-    const element = document.querySelector(selector);
-    if (element && (element.offsetParent !== null || element === document.activeElement)) {
-      textarea = element;
-      break;
-    }
-  }
-
-  if (!textarea) {
-    console.error(`找不到 ${platform} 輸入框`);
-    showNotification(t('promptNotInserted'), 'error');
-    return;
-  }
-
-  // 如果是 contenteditable div
-  if (textarea.getAttribute('contenteditable') === 'true') {
-    // 獲取選取範圍
-    const selection = window.getSelection();
-    let inserted = false;
-
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      
-      // 如果選取範圍在輸入框內，插入到選取位置
-      if (textarea.contains(range.commonAncestorContainer)) {
-        range.deleteContents();
-        const textNode = document.createTextNode(content);
-        range.insertNode(textNode);
-        
-        // 移動游標到插入內容後面
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        inserted = true;
-      }
+    try {
+      document.execCommand('copy');
+      showNotification(t('promptInserted'), 'success');
+    } catch (e) {
+      console.error('複製失敗:', e);
+      showNotification('複製失敗', 'error');
     }
 
-    // 如果沒有插入（沒有選取範圍或選取範圍不在輸入框內），追加到末尾
-    if (!inserted) {
-      textarea.innerText = textarea.innerText + content;
-    }
-
-    textarea.focus();
-
-    // 觸發 input 事件
-    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-    textarea.dispatchEvent(inputEvent);
-  } else {
-    // 如果是 textarea
-    // 獲取當前值和光標位置
-    const currentValue = textarea.value;
-    const start = textarea.selectionStart || 0;
-
-    // 插入內容
-    const newValue = currentValue.substring(0, start) + content + currentValue.substring(start);
-
-    // 設置值
-    setNativeValue(textarea, newValue);
-
-    // 觸發輸入事件以確保 React 偵測到變化
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.dispatchEvent(new Event('change', { bubbles: true }));
-    textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-    textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-
-    // 設置光標位置到插入內容的末尾
-    const newPosition = start + content.length;
-    textarea.setSelectionRange(newPosition, newPosition);
-
-    // 聚焦到輸入框
-    textarea.focus();
-  }
-
-  // 等待一下確保內容已經插入，然後點擊送出按鈕
-  setTimeout(() => {
-    clickSendButton();
-  }, 100);
-
-  // 顯示成功通知
-  showNotification(t('promptInserted'), 'success');
+    document.body.removeChild(textArea);
+  });
 }
 
 /**
