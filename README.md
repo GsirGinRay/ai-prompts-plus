@@ -1,186 +1,131 @@
 # AI 提示詞+ (AI Prompts+)
 
-**AI投資學院+ 官方推薦工具**
+**AI投資學院+ 官方推薦工具** | 版本 2.0.3
 
-[English](#english) | [繁體中文](#繁體中文)
+這是一個功能強大的 Chrome 擴充功能，專為提升 AI 使用效率而設計。幫助您管理、組織並快速使用常用的提示詞模板。
+
+🚀 **全面支援四大主流 AI 平台：**
+- **ChatGPT** (chatgpt.com / openai.com)
+- **Claude** (claude.ai)
+- **Google Gemini** (gemini.google.com)
+- **Grok** (grok.com)
 
 ---
 
-## English
+## ✨ 主要功能
 
-A powerful Chrome extension for managing and quickly using AI prompt templates with variable replacement and fast insertion features. **Now supports both ChatGPT and Google Gemini!**
+### 1. 跨平台快速插入
+在 ChatGPT、Claude、Gemini 或 Grok 的對話頁面，輸入框附近會自動出現「提示詞」浮動按鈕。點擊即可開啟面板，一鍵將模板填入對話框。
 
-### Features
+### 2. 智慧變數替換
+支援動態變數功能。在提示詞中使用 `[變數名稱]`（例如 `[主題]`、`[受眾]`），使用時會自動彈出輸入視窗讓您填寫，不再需要手動修改提示詞內容。
 
-- **Multi-Platform Support**: Works seamlessly on both ChatGPT and Google Gemini
-- **Prompt Management**: Add, edit, delete prompt templates with categorization and tagging
-- **Variable Replacement**: Use `[variable_name]` format for dynamic content
-- **Multi-language Support**: Switch between Traditional Chinese and English
-- **Import/Export**: Backup and share your prompts as JSON files
-- **Quick Access**: Floating button on AI chat pages for instant access
-- **Usage Statistics**: Track how often you use each prompt
+### 3. 高效管理系統
+- **分類管理**：為提示詞設定分類，井然有序。
+- **置頂功能 (Pin)**：將最常用的提示詞置頂，置於列表最上方，存取更方便。
+- **快速搜尋**：支援關鍵字搜尋，或使用 `/` 開頭進行指令式搜尋。
+- **使用統計**：自動記錄每個提示詞的使用次數，常用的會自動排序在前。
 
-### 🎁 Get More Prompts
+### 4. 資料安全與備份
+- **本地儲存**：所有資料僅儲存在您的瀏覽器本地端，保障隱私。
+- **匯入/匯出**：支援將所有提示詞匯出為 JSON 檔進行備份，或分享給團隊成員。
+- **多語言介面**：內建繁體中文與英文介面，可隨時切換。
 
-Want access to **100+ premium prompt templates**?
+---
 
-Join **[AI Investment Academy+](https://www.skool.com/ai-investment-academy-plus)** and get:
-- 📚 **100+ Advanced Prompt Library** (regularly updated)
-- 🎯 **Industry-Specific Templates** (Marketing, Sales, Management, etc.)
-- 🔥 **Latest AI Application Techniques**
-- 👥 **Community Support & Collaboration**
-- 🎓 **Online Courses & Workshops**
+## 📥 安裝指南
 
-**[→ Join AI Investment Academy+ Now](https://www.skool.com/ai-investment-academy-plus)**
+由於本擴充功能尚未上架 Chrome 商店，請依照以下步驟進行安裝（過程約 1 分鐘）：
 
-### Installation
+### 第一步：準備檔案
+1. 下載此專案的完整程式碼（或是 `git clone` 到本地）。
+2. 確保您擁有 `GPTprompt` 資料夾（內含 `manifest.json` 檔案）。
 
-#### From Chrome Web Store
-Coming soon...
+### 第二步：載入擴充功能
+1. 開啟 Google Chrome 瀏覽器。
+2. 在網址列輸入 `chrome://extensions/` 並按下 Enter。
+3. 在頁面右上角，開啟 **「開發人員模式」** (Developer mode) 開關。
+4. 點擊左上角的 **「載入未封裝項目」** (Load unpacked) 按鈕。
+5. 選擇本專案中的 `GPTprompt` 資料夾。
 
-#### From Source
+### 第三步：開始使用
+安裝完成後，您會在瀏覽器擴充功能列看到圖示。建議將其 **「固定」 (Pin)** 在工具列上以便隨時使用。
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/GsirGinRay/ai-prompts-plus.git
+---
+
+## 📖 使用教學
+
+### 1. 新增您的第一個提示詞
+1. 點擊瀏覽器右上角的擴充功能圖示。
+2. 點擊 **「+ 新增」** 按鈕。
+3. 填寫名稱（例如：「SEO 文章撰寫」）。
+4. 在內容中輸入提示詞模板。若有需要動態替換的部分，請用中括號包起來。
+   
+   **範例：**
+   ```text
+   請幫我以 [角色] 的角度，寫一篇關於 [主題] 的文章。
+   文章的目標受眾是 [受眾]，語氣要 [語氣]。
    ```
+5. 點擊保存。
 
-2. Open Chrome and navigate to `chrome://extensions/`
+### 2. 在 AI 聊天中使用
+1. 前往 ChatGPT、Claude、Gemini 或 Grok 網站。
+2. 您會在輸入框附近看到一個 **「提示詞」** 的快速訪問按鈕。
+3. 點擊按鈕開啟面板，點擊您剛建立的提示詞。
+4. 若提示詞包含變數（如 `[主題]`），會跳出視窗讓您填寫。
+5. 填寫完畢後按 Enter，內容將自動填入對話框並送出。
 
-3. Enable "Developer mode" in the top right corner
-
-4. Click "Load unpacked" and select the `GPTprompt` folder
-
-5. Visit [ChatGPT](https://chat.openai.com) or [Google Gemini](https://gemini.google.com) and start using the extension!
-
-### Usage
-
-1. **Add a Prompt**: Click the extension icon and add your prompt template
-2. **Use Variables**: Insert `[topic]`, `[audience]`, etc. in your prompts
-3. **Quick Insert**: Click on any prompt to auto-fill the AI chat input (works on both ChatGPT and Gemini)
-4. **Language Switch**: Toggle between English and Traditional Chinese in settings
-
-### Example Prompts
-
-```
-Write an article about [topic] for [audience]
-with approximately [word_count] words.
-```
-
-### Technical Stack
-
-- Manifest V3
-- Chrome Storage API
-- Pure vanilla JavaScript
-- No external dependencies
-
-### License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
-### Privacy Policy
-
-This extension does not collect any personal data.
-
-- **Local Storage Only**: All prompts and settings are stored locally on your device using Chrome's local storage API
-- **No Data Collection**: We do not collect, transmit, or share any user data
-- **No Analytics**: No tracking, analytics, or telemetry is implemented
-- **No External Servers**: All functionality works entirely offline after installation
-- **Open Source**: The code is publicly available for review
-
-### Contributing
-
-Issues and Pull Requests are welcome!
+### 3. 進階技巧
+- **置頂常用項目**：在列表中點擊圖釘圖示 📌，該提示詞將永遠顯示在最上方。
+- **搜尋**：在面板上方的搜尋框輸入關鍵字。支援以 `/` 開頭直接搜尋名稱。
+- **備份資料**：點擊管理面板右上角的下載圖示，將所有設定匯出備份。
 
 ---
 
-## 繁體中文
+## 🎁 獲取更多優質提示詞
 
-一個功能強大的 Chrome 擴充功能，幫助您管理和快速使用 AI 提示詞模板，支援自訂變數和快速插入功能。**現已支援 ChatGPT 和 Google Gemini！**
-
-### 主要功能
-
-- **多平台支援**：同時支援 ChatGPT 和 Google Gemini，無縫切換使用
-- **提示詞管理**：新增、編輯、刪除提示詞模板，支援分類和標籤
-- **變數替換**：使用 `[變數名稱]` 格式標記可替換內容
-- **多語言支援**：繁體中文與英文介面自由切換
-- **匯入/匯出**：備份和分享您的提示詞為 JSON 檔案
-- **快速訪問**：AI 對話頁面浮動按鈕，一鍵開啟
-- **使用統計**：追蹤每個提示詞的使用次數
-
-### 🎁 獲取更多提示詞
-
-想要存取 **100+ 進階提示詞模板**？
+想要存取 **100+ 進階提示詞模板** 並學習更多 AI 應用技巧？
 
 加入 **[AI投資學院+](https://www.skool.com/ai-investment-academy-plus)** 即可獲得：
 - 📚 **100+ 進階提示詞庫**（定期更新）
 - 🎯 **各產業專用模板**（行銷、銷售、管理等）
 - 🔥 **最新 AI 應用技巧**
 - 👥 **社群成員互助交流**
-- 🎓 **線上課程與工作坊**
 
 **[→ 立即加入 AI投資學院+](https://www.skool.com/ai-investment-academy-plus)**
 
-### 安裝方式
+---
 
-#### 從 Chrome 線上應用程式商店
-即將推出...
+## 🔒 隱私權政策與授權
 
-#### 從原始碼安裝
-
-1. 複製此專案：
-   ```bash
-   git clone https://github.com/GsirGinRay/ai-prompts-plus.git
-   ```
-
-2. 開啟 Chrome 瀏覽器，前往 `chrome://extensions/`
-
-3. 開啟右上角的「開發人員模式」
-
-4. 點擊「載入未封裝項目」，選擇 `GPTprompt` 資料夾
-
-5. 前往 [ChatGPT](https://chat.openai.com) 或 [Google Gemini](https://gemini.google.com) 開始使用！
-
-### 使用說明
-
-1. **新增提示詞**：點擊擴充功能圖示，新增您的提示詞模板
-2. **使用變數**：在提示詞中插入 `[主題]`、`[受眾]` 等變數
-3. **快速插入**：點擊任何提示詞即可自動填入 AI 對話輸入框（ChatGPT 和 Gemini 都支援）
-4. **語言切換**：在設定中切換繁體中文與英文介面
-
-### 提示詞範例
-
-```
-請幫我撰寫一篇關於 [主題] 的文章，
-目標受眾是 [受眾]，
-文章長度約 [字數] 字。
-```
-
-### 技術架構
-
-- Manifest V3
-- Chrome Storage API
-- 純原生 JavaScript
-- 無第三方依賴
-
-### 授權條款
-
-MIT License - 詳見 [LICENSE](LICENSE) 檔案
-
-### 隱私權政策
-
-本擴充功能不會收集任何個人資料。
-
-- **僅本機儲存**：所有提示詞和設定都儲存在您的裝置本機，使用 Chrome 的本地儲存 API
-- **不收集資料**：我們不會收集、傳輸或分享任何使用者資料
-- **無追蹤分析**：未實作任何追蹤、分析或遙測功能
-- **無外部伺服器**：所有功能在安裝後完全離線運作
-- **開放原始碼**：程式碼公開可供檢視
-
-### 貢獻
-
-歡迎提交 Issue 和 Pull Request！
+- **隱私權**：本擴充功能 **不會** 收集、傳輸或分享您的任何個人資料或對話內容。所有資料皆儲存於您的裝置本地端 (Chrome Local Storage)。
+- **授權**：MIT License. Open source for educational and personal use.
 
 ---
 
-**Made with ❤️ for better ChatGPT experience**
+## 📋 更新日誌
+
+### v2.0.3 (2026-01-10)
+**修復項目：**
+- **Claude 平台**：修復進入後需要新開頁面才能看到按鈕的問題，按鈕寬度現在與輸入框同寬
+- **Grok 平台**：修復提示詞無法填入輸入框和點擊送出的問題
+- **Grok 平台**：修復變數輸入時焦點跳走的問題
+
+### v2.0.2 (2025-01-08)
+- 新增 Claude 平台支援
+- 新增 Grok 平台支援
+- 變數輸入框支援 Enter 鍵直接執行
+
+### v2.0.0 (2024-11-26)
+- 新增直接刪除功能
+- 新增置頂功能
+- 智能排序（置頂優先，使用次數排序）
+
+### v1.0.0 (2024-11-24)
+- 首次發布
+- 支援 ChatGPT 和 Gemini
+- 提示詞管理、變數替換、匯入/匯出功能
+
+---
+
+**Made with ❤️ for better AI experience**
