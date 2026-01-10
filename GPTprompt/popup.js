@@ -465,29 +465,60 @@ async function handleInsertPrompt() {
 }
 
 /**
- * 插入內容到 ChatGPT 頁面
+ * 複製內容到剪貼簿
  */
 async function insertToPage(content) {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    if (tab.url && (tab.url.includes('chat.openai.com') || 
-        tab.url.includes('chatgpt.com') || 
-        tab.url.includes('gemini.google.com') ||
-        tab.url.includes('claude.ai') ||
-        tab.url.includes('grok.com'))) {
-      await chrome.tabs.sendMessage(tab.id, {
-        action: 'insertPrompt',
-        content: content
-      });
-      window.close(); // 關閉 popup
+    // 使用 Clipboard API 複製到剪貼簿
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(content);
     } else {
-      alert(I18n.t('notChatGPTPage'));
+      // 備用方案：使用 execCommand
+      const textarea = document.createElement('textarea');
+      textarea.value = content;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
     }
+
+    // 顯示複製成功提示
+    const successMsg = I18n.currentLang === 'zh-TW'
+      ? '已複製到剪貼簿！'
+      : 'Copied to clipboard!';
+
+    // 短暫顯示成功訊息後關閉
+    showCopySuccess(successMsg);
   } catch (error) {
-    console.error('插入失敗:', error);
-    alert(I18n.t('insertFailed'));
+    console.error('複製失敗:', error);
+    const errorMsg = I18n.currentLang === 'zh-TW'
+      ? '複製失敗，請重試'
+      : 'Copy failed, please try again';
+    alert(errorMsg);
   }
+}
+
+/**
+ * 顯示複製成功提示
+ */
+function showCopySuccess(message) {
+  // 建立提示元素
+  const toast = document.createElement('div');
+  toast.className = 'copy-toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // 動畫顯示
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  // 1秒後關閉 popup
+  setTimeout(() => {
+    window.close();
+  }, 1000);
 }
 
 /**

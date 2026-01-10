@@ -21,7 +21,7 @@ const I18n = {
       cancel: '取消',
       edit: '編輯',
       delete: '刪除',
-      insert: '插入提示詞',
+      insert: '複製提示詞',
 
       // 搜尋
       searchPlaceholder: '搜尋提示詞...',
@@ -87,7 +87,7 @@ const I18n = {
       cancel: 'Cancel',
       edit: 'Edit',
       delete: 'Delete',
-      insert: 'Insert Prompt',
+      insert: 'Copy Prompt',
 
       // Search
       searchPlaceholder: 'Search prompts...',

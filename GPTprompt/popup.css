@@ -417,3 +417,26 @@ body {
 .modal-body::-webkit-scrollbar-thumb:hover {
   background: #ccc;
 }
+
+/* 複製成功提示 */
+.copy-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #000000;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.copy-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
