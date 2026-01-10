@@ -726,10 +726,11 @@
 
 /* 推廣橫幅樣式 */
 .promo-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px;
+  background: #000000;
+  border: 1px solid #333333;
+  border-radius: 6px;
   margin: 10px 12px;
-  padding: 14px;
+  padding: 12px;
   color: #ffffff;
   animation: promoBannerFadeIn 0.3s ease-out;
 }
@@ -748,7 +749,7 @@
 .promo-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .promo-text {
@@ -756,16 +757,15 @@
 }
 
 .promo-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   color: #ffffff;
 }
 
 .promo-desc {
-  font-size: 12px;
-  opacity: 0.9;
-  color: #ffffff;
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 .promo-actions {
@@ -792,34 +792,34 @@
 
 .promo-btn-primary {
   background: #ffffff;
-  color: #764ba2;
+  color: #000000;
   font-weight: 600;
 }
 
 .promo-btn-primary:hover {
-  background: #f3f4f6;
-  transform: scale(1.02);
+  background: #e5e7eb;
 }
 
 .promo-btn-secondary {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent;
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid #4b5563;
 }
 
 .promo-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #1f2937;
+  border-color: #6b7280;
 }
 
 .promo-btn-dismiss {
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: #6b7280;
   font-size: 11px;
   padding: 4px 8px;
 }
 
 .promo-btn-dismiss:hover {
-  color: #ffffff;
+  color: #9ca3af;
   text-decoration: underline;
 }
 
