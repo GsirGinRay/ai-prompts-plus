@@ -450,7 +450,7 @@ async function shouldShowPromoBanner() {
     }
 
     const now = Date.now();
-    const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 天的毫秒數
+    const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 天
 
     // 首次安裝（沒有 promoFirstInstall 記錄）
     if (!result.promoFirstInstall) {
