@@ -57,33 +57,36 @@ const PLATFORM_SELECTORS = {
   [PLATFORMS.CLAUDE]: {
     textarea: [
       '.tiptap.ProseMirror[data-testid="chat-input"]',
-      'div[contenteditable="true"][role="textbox"].tiptap',
+      'div[contenteditable="true"][data-testid="chat-input"]',
       '[data-testid="chat-input"]',
       'div.ProseMirror[contenteditable="true"]'
     ],
     sendButton: [
       'button[aria-label="Send message"]',
+      'button.Button_claude__c_hZy[aria-label="Send message"]',
       'button[data-testid="send-button"]',
-      'button[type="submit"]',
-      '.Button_claude__c_hZy[aria-label*="Send"]'
+      '.Button_claude__c_hZy'
     ],
     inputContainer: [
+      // 新版 Claude：輸入框容器（不依賴 mx-2，因為桌面端是 mx-0）
+      'div.flex.flex-col.bg-bg-000',
       '.top-5.z-10.mx-auto.w-full.max-w-2xl',
-      '.flex.flex-col.bg-bg-000.mx-2',
       '.chat-input-grid-container'
     ]
   },
   [PLATFORMS.GROK]: {
     textarea: [
-      'textarea[aria-label="Ask Grok anything"]',
-      'textarea.w-full.px-2',
-      '.query-bar textarea',
-      'textarea[dir="auto"]'
+      // Grok 使用 contenteditable div，不是 textarea
+      'div[contenteditable="true"].tiptap.ProseMirror',
+      '.tiptap.ProseMirror[contenteditable="true"]',
+      'div.tiptap.ProseMirror',
+      'div[contenteditable="true"].w-full.px-2'
     ],
     sendButton: [
-      'button[aria-label="Submit"]',
+      'button[type="submit"][aria-label="提交"]',
+      'button[type="submit"][aria-label="Submit"]',
       'button[type="submit"]',
-      'button[aria-label*="Send"]'
+      'button[aria-label*="Submit"]'
     ],
     inputContainer: [
       'form.w-full.text-base',
@@ -362,10 +365,13 @@ function clickSendButton() {
   }
 
   // 如果找不到按鈕，嘗試使用 Enter 鍵
-  const textarea = document.querySelector('textarea[data-id="root"]') ||
-                   document.querySelector('textarea') ||
-                   document.querySelector('.tiptap.ProseMirror');
-  if (textarea) {
+  // 支援所有平台的輸入框選擇器
+  const inputElement = document.querySelector('textarea[data-id="root"]') ||
+                       document.querySelector('.tiptap.ProseMirror[contenteditable="true"]') ||  // Grok & Claude
+                       document.querySelector('div[contenteditable="true"].tiptap') ||
+                       document.querySelector('div.ql-editor[contenteditable="true"]') ||  // Gemini
+                       document.querySelector('textarea');
+  if (inputElement) {
     const enterEvent = new KeyboardEvent('keydown', {
       key: 'Enter',
       code: 'Enter',
@@ -374,7 +380,7 @@ function clickSendButton() {
       bubbles: true,
       cancelable: true
     });
-    textarea.dispatchEvent(enterEvent);
+    inputElement.dispatchEvent(enterEvent);
     console.log('使用 Enter 鍵送出');
     return true;
   }
@@ -500,38 +506,54 @@ function createQuickAccessButton() {
       // 不再繼續向上，保持在這一層
       console.log('停止向上查找，使用當前層級');
     } else if (platform === PLATFORMS.CLAUDE) {
-      // Claude 特殊處理：插入到對話內容和輸入框之間
-      // 新的 HTML 結構分析
-      
-      // 方法1：插入到 .top-5.z-10.mx-auto.w-full.max-w-2xl 容器內
-      const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
-      
-      if (claudeTopContainer) {
-        // 找到 Prompt categories 區域（ul.flex.flex-wrap）
-        const promptCategories = claudeTopContainer.querySelector('ul.flex.flex-wrap');
-        
-        if (promptCategories && claudeTopContainer.contains(promptCategories)) {
-          // 在 Prompt categories 之前插入按鈕
-          const targetParent = claudeTopContainer;
-          const referenceNode = promptCategories;
-          
-          // 確保按鈕有適當的樣式 - 跟輸入框一樣寬
+      // Claude 特殊處理：插入到輸入框容器之前
+
+      // 方法1：通過 data-testid="chat-input" 找到輸入框，然後向上找到主容器
+      const chatInput = document.querySelector('[data-testid="chat-input"]');
+      if (chatInput) {
+        // 向上查找包含 bg-bg-000 的容器（這是輸入框的主容器）
+        let inputContainer = chatInput.closest('div.flex.flex-col.bg-bg-000');
+        if (inputContainer && inputContainer.parentElement) {
+          // 複製輸入框容器的寬度相關樣式，確保按鈕和輸入框同寬
+          const computedStyle = window.getComputedStyle(inputContainer);
           button.style.marginBottom = '12px';
           button.style.marginTop = '0';
-          button.style.marginLeft = 'auto';
-          button.style.marginRight = 'auto';
+          button.style.width = computedStyle.width; // 使用輸入框的實際寬度
+          button.style.maxWidth = 'none';
+          button.style.marginLeft = computedStyle.marginLeft;
+          button.style.marginRight = computedStyle.marginRight;
+          button.style.justifyContent = 'center';
           button.style.display = 'inline-flex';
           button.style.position = 'relative';
-          button.style.width = '100%';
-          button.style.maxWidth = '42rem'; // 2xl = 42rem = 672px
-          button.style.justifyContent = 'center';
-          
-          targetParent.insertBefore(button, referenceNode);
-          console.log('Claude: 按鈕插入到 Prompt categories 之前');
+          button.style.boxSizing = 'border-box';
+          inputContainer.parentElement.insertBefore(button, inputContainer);
+          console.log('Claude: 按鈕插入到輸入框容器之前（通過 chat-input），寬度:', computedStyle.width);
           return;
         }
-        
-        // 備用：直接插入到容器最前面
+      }
+
+      // 方法2：直接找輸入框容器（不依賴 mx-2，因為桌面端是 mx-0）
+      const inputArea = document.querySelector('div.flex.flex-col.bg-bg-000');
+      if (inputArea && inputArea.parentElement) {
+        const computedStyle = window.getComputedStyle(inputArea);
+        button.style.marginBottom = '12px';
+        button.style.marginTop = '0';
+        button.style.width = computedStyle.width;
+        button.style.maxWidth = 'none';
+        button.style.marginLeft = computedStyle.marginLeft;
+        button.style.marginRight = computedStyle.marginRight;
+        button.style.justifyContent = 'center';
+        button.style.display = 'inline-flex';
+        button.style.position = 'relative';
+        button.style.boxSizing = 'border-box';
+        inputArea.parentElement.insertBefore(button, inputArea);
+        console.log('Claude: 按鈕插入到輸入框容器之前');
+        return;
+      }
+
+      // 方法3：舊版選擇器（向後兼容）
+      const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
+      if (claudeTopContainer) {
         const firstChild = claudeTopContainer.firstElementChild;
         if (firstChild) {
           button.style.marginBottom = '12px';
@@ -540,30 +562,12 @@ function createQuickAccessButton() {
           button.style.display = 'inline-flex';
           button.style.position = 'relative';
           button.style.width = '100%';
-          button.style.maxWidth = '42rem';
+          button.style.maxWidth = 'none';
           button.style.justifyContent = 'center';
           claudeTopContainer.insertBefore(button, firstChild);
-          console.log('Claude: 按鈕插入到容器最前面');
+          console.log('Claude: 按鈕插入到舊版容器');
           return;
         }
-      }
-
-      // 方法2：舊的選擇器（向後兼容）
-      const inputArea = document.querySelector('.flex.flex-col.bg-bg-000.mx-2');
-      if (inputArea && inputArea.parentElement) {
-        const targetParent = inputArea.parentElement;
-        const referenceNode = inputArea;
-        
-        button.style.marginBottom = '12px';
-        button.style.marginTop = '0';
-        button.style.width = '100%';
-        button.style.maxWidth = '42rem';
-        button.style.marginLeft = 'auto';
-        button.style.marginRight = 'auto';
-        button.style.justifyContent = 'center';
-        targetParent.insertBefore(button, referenceNode);
-        console.log('Claude: 按鈕插入到輸入框容器之前（舊選擇器）');
-        return;
       }
 
       // 備用方案：使用固定定位
@@ -829,12 +833,12 @@ function findInputContainer() {
       return grokForm;
     }
 
-    // 方法3：找 textarea
-    const grokTextarea = document.querySelector('textarea[aria-label="Ask Grok anything"]');
-    if (grokTextarea) {
-      const parent = grokTextarea.parentElement;
+    // 方法3：找 contenteditable div（Grok 使用 tiptap 編輯器）
+    const grokEditor = document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
+    if (grokEditor) {
+      const parent = grokEditor.parentElement;
       if (parent) {
-        console.log('通過 Grok textarea 找到容器');
+        console.log('通過 Grok contenteditable 找到容器');
         return parent.parentElement;
       }
     }
@@ -1112,14 +1116,40 @@ function showVariableInputPanel(prompt, variables) {
     insertVariablePrompt();
   });
 
-  // 功能1：為所有變數輸入框添加 Enter 鍵事件監聽
+  // 功能1：為所有變數輸入框添加事件監聽
   const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
   inputs.forEach(input => {
+    // Enter 鍵送出
     input.addEventListener('keydown', (e) => {
+      // 阻止事件冒泡，防止 Grok 等平台捕獲鍵盤事件
+      e.stopPropagation();
       if (e.key === 'Enter') {
         e.preventDefault();
         insertVariablePrompt();
       }
+    });
+
+    // 阻止 input 事件冒泡，防止 Grok 等平台搶奪焦點
+    input.addEventListener('input', (e) => {
+      e.stopPropagation();
+    });
+
+    // 阻止 focus/blur 事件冒泡
+    input.addEventListener('focus', (e) => {
+      e.stopPropagation();
+    });
+
+    input.addEventListener('blur', (e) => {
+      e.stopPropagation();
+    });
+
+    // 阻止其他可能被捕獲的事件
+    input.addEventListener('keyup', (e) => {
+      e.stopPropagation();
+    });
+
+    input.addEventListener('keypress', (e) => {
+      e.stopPropagation();
     });
   });
 
@@ -1376,12 +1406,11 @@ function retryCreateButton(attempts = 0) {
   // 先移除舊按鈕（如果存在）
   const oldButton = document.getElementById('prompt-manager-quick-btn');
   if (oldButton) {
-    // 檢查按鈕是否在正確位置
-    const claudeInputContainer = document.querySelector('.flex.flex-col.bg-bg-000.mx-2');
-    const isInCorrectPosition = oldButton.parentElement === claudeInputContainer?.parentElement;
+    // 檢查按鈕是否在正確位置（不使用固定定位）
+    const isUsingFallback = oldButton.classList.contains('fixed-position');
 
-    if (platform === PLATFORMS.CLAUDE && isInCorrectPosition) {
-      // Claude：按鈕已經在正確位置，不需要移除和重新創建
+    if (platform === PLATFORMS.CLAUDE && !isUsingFallback) {
+      // Claude：按鈕已經在正確位置（非固定定位），不需要移除和重新創建
       console.log('✅ Claude：按鈕已在正確位置');
       return;
     }
@@ -1421,7 +1450,9 @@ new MutationObserver((mutations) => {
   const url = location.href;
   if (url !== lastUrl) {
     lastUrl = url;
-    createQuickAccessButton();
+    // 使用 retryCreateButton 而非 createQuickAccessButton，確保有重試機制
+    // 這樣在 Claude 等 SPA 平台上，即使輸入框還沒加載也能重試
+    retryCreateButton();
     return;
   }
 
@@ -1456,11 +1487,11 @@ if (detectPlatform() === PLATFORMS.CLAUDE) {
       console.log('Claude: 按鈕被移除，2秒後重新創建...');
       
       setTimeout(() => {
-        // 檢查 Claude 容器是否存在
-        const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
-        const promptCategories = document.querySelector('ul.flex.flex-wrap');
-        
-        if (claudeTopContainer || promptCategories) {
+        // 檢查 Claude 容器是否存在（使用新版選擇器）
+        const chatInput = document.querySelector('[data-testid="chat-input"]');
+        const inputContainer = document.querySelector('div.flex.flex-col.bg-bg-000');
+
+        if (chatInput || inputContainer) {
           console.log('Claude: 重新創建按鈕');
           retryCreateButton();
         }
@@ -1476,18 +1507,18 @@ if (detectPlatform() === PLATFORMS.GROK) {
   let isRecreating = false;
   setInterval(() => {
     if (isRecreating) return; // 防止同時多次創建
-    
+
     const button = document.getElementById('prompt-manager-quick-btn');
     if (!button) {
       isRecreating = true;
       console.log('Grok: 按鈕被移除，2秒後重新創建...');
-      
+
       setTimeout(() => {
-        // 檢查 Grok 容器是否存在
-        const grokForm = document.querySelector('form.w-full.text-base.flex.flex-col.gap-2.items-center.justify-center.relative.z-10.mt-2');
-        const grokInputContainer = document.querySelector('div.w-full.mb-3');
-        
-        if (grokForm || grokInputContainer) {
+        // 檢查 Grok 容器是否存在（使用正確的 contenteditable 選擇器）
+        const grokEditor = document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
+        const grokQueryBar = document.querySelector('.query-bar');
+
+        if (grokEditor || grokQueryBar) {
           console.log('Grok: 重新創建按鈕');
           retryCreateButton();
         }

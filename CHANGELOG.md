@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-01-10
+
+### Fixed
+- **Claude 平台按鈕問題**：修復 Claude 平台進入後需要新開頁面才能看到按鈕的問題
+  - SPA 導航時改用 `retryCreateButton()` 確保有重試機制
+  - 使用 `data-testid="chat-input"` 作為主要選擇器，更可靠
+  - 移除對 `mx-2` 的依賴（桌面端會變成 `mx-0`）
+  - 按鈕寬度現在與輸入框同寬
+- **Grok 平台送出問題**：修復 Grok 平台提示詞無法填入輸入框和點擊送出按鈕的問題
+  - Grok 使用 `contenteditable` div 而非 textarea，已更新選擇器
+  - 更新發送按鈕選擇器為 `button[type="submit"][aria-label="提交"]`
+- **Grok 變數輸入焦點問題**：修復在 Grok 平台輸入變數時，焦點會跳到主輸入框的問題
+  - 阻止變數輸入框的所有事件冒泡，防止 Grok 頁面捕獲事件
+
+### Technical
+- 更新 Grok textarea 選擇器：`div[contenteditable="true"].tiptap.ProseMirror`
+- 更新 Grok sendButton 選擇器：`button[type="submit"][aria-label="提交"]`
+- 重構 Claude 按鈕插入邏輯，優先使用 `chat-input` 定位
+- 優化 Enter 鍵備用方案，支援所有平台的 contenteditable 編輯器
+
+---
+
 ## [2.0.2] - 2025-01-08
 
 ### Added
