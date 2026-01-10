@@ -158,7 +158,12 @@ const i18nMessages = {
     pinFailed: '置頂失敗',
     required: '*',
     extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version',
-    platformNotSupported: 'Unsupported AI platform'
+    platformNotSupported: 'Unsupported AI platform',
+    promoTitle: '🎁 免費領取 100+ AI 提示詞模板',
+    promoDesc: '加入 AI投資學院+ 社群，獲取專業提示詞庫',
+    promoButton: '立即領取',
+    promoDismiss: '不再提醒',
+    promoLater: '下次再說'
   },
   'en': {
     promptNotInserted: 'Input box not found, please ensure you are on an AI conversation page',
@@ -201,7 +206,12 @@ const i18nMessages = {
     unpinned: 'Unpinned',
     pinFailed: 'Pin failed',
     required: '*',
-    extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version'
+    extensionReloaded: 'Extension reloaded, please refresh the page (F5) to use the latest version',
+    promoTitle: '🎁 Get 100+ Free AI Prompt Templates',
+    promoDesc: 'Join AI Investment Academy+ for professional prompts',
+    promoButton: 'Get Now',
+    promoDismiss: "Don't show again",
+    promoLater: 'Maybe later'
   }
 };
 
@@ -424,6 +434,112 @@ function showNotification(message, type = 'success') {
     notification.classList.add('fade-out');
     setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+/**
+ * 檢查是否應該顯示推廣橫幅
+ * 規則：首次安裝顯示，之後每週顯示一次，除非用戶選擇「不再提醒」
+ */
+async function shouldShowPromoBanner() {
+  try {
+    const result = await chrome.storage.local.get(['promoDismissed', 'promoLastShown', 'promoFirstInstall']);
+
+    // 如果用戶已選擇「不再提醒」，則不顯示
+    if (result.promoDismissed) {
+      return false;
+    }
+
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 天的毫秒數
+
+    // 首次安裝（沒有 promoFirstInstall 記錄）
+    if (!result.promoFirstInstall) {
+      await chrome.storage.local.set({ promoFirstInstall: now, promoLastShown: now });
+      return true;
+    }
+
+    // 檢查是否超過一週
+    const lastShown = result.promoLastShown || 0;
+    if (now - lastShown >= oneWeek) {
+      await chrome.storage.local.set({ promoLastShown: now });
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('檢查推廣橫幅狀態失敗:', error);
+    return false;
+  }
+}
+
+/**
+ * 處理「不再提醒」按鈕點擊
+ */
+async function dismissPromoBanner() {
+  try {
+    await chrome.storage.local.set({ promoDismissed: true });
+    const banner = document.getElementById('promo-banner');
+    if (banner) {
+      banner.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('設定不再提醒失敗:', error);
+  }
+}
+
+/**
+ * 處理「下次再說」按鈕點擊
+ */
+function hidePromoBanner() {
+  const banner = document.getElementById('promo-banner');
+  if (banner) {
+    banner.style.display = 'none';
+  }
+}
+
+/**
+ * 渲染推廣橫幅 HTML
+ */
+function renderPromoBanner() {
+  return `
+    <div id="promo-banner" class="promo-banner">
+      <div class="promo-content">
+        <div class="promo-text">
+          <div class="promo-title">${t('promoTitle')}</div>
+          <div class="promo-desc">${t('promoDesc')}</div>
+        </div>
+        <div class="promo-actions">
+          <a href="https://link.brain168.com/ai-invest" target="_blank" class="promo-btn promo-btn-primary">${t('promoButton')}</a>
+          <button class="promo-btn promo-btn-secondary promo-later-btn">${t('promoLater')}</button>
+          <button class="promo-btn promo-btn-dismiss promo-dismiss-btn">${t('promoDismiss')}</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 綁定推廣橫幅事件
+ */
+function bindPromoBannerEvents() {
+  const dismissBtn = document.querySelector('.promo-dismiss-btn');
+  const laterBtn = document.querySelector('.promo-later-btn');
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dismissPromoBanner();
+    });
+  }
+
+  if (laterBtn) {
+    laterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hidePromoBanner();
+    });
+  }
 }
 
 /**
@@ -688,6 +804,9 @@ async function createPromptPanel() {
   promptPanel.id = 'prompt-manager-panel';
   promptPanel.className = 'prompt-panel';
 
+  // 檢查是否需要顯示推廣橫幅
+  const showPromo = await shouldShowPromoBanner();
+
   promptPanel.innerHTML = `
     <div class="prompt-panel-header">
       <h3>${t('promptManager')}</h3>
@@ -702,6 +821,7 @@ async function createPromptPanel() {
         <button class="prompt-panel-close" title="${t('close')}">✕</button>
       </div>
     </div>
+    ${showPromo ? renderPromoBanner() : ''}
     <div class="prompt-panel-search">
       <input type="text" id="prompt-search" placeholder="${t('searchPrompts')}" />
     </div>
@@ -772,6 +892,11 @@ async function createPromptPanel() {
   });
 
   bindPromptItemEvents();
+
+  // 綁定推廣橫幅事件
+  if (showPromo) {
+    bindPromoBannerEvents();
+  }
 }
 
 /**

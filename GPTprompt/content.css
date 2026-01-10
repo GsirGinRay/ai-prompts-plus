@@ -724,6 +724,105 @@
   }
 }
 
+/* 推廣橫幅樣式 */
+.promo-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  margin: 10px 12px;
+  padding: 14px;
+  color: #ffffff;
+  animation: promoBannerFadeIn 0.3s ease-out;
+}
+
+@keyframes promoBannerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.promo-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.promo-text {
+  text-align: center;
+}
+
+.promo-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #ffffff;
+}
+
+.promo-desc {
+  font-size: 12px;
+  opacity: 0.9;
+  color: #ffffff;
+}
+
+.promo-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.promo-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.promo-btn-primary {
+  background: #ffffff;
+  color: #764ba2;
+  font-weight: 600;
+}
+
+.promo-btn-primary:hover {
+  background: #f3f4f6;
+  transform: scale(1.02);
+}
+
+.promo-btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.promo-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.promo-btn-dismiss {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.promo-btn-dismiss:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
 /* 響應式設計 */
 @media (max-width: 768px) {
   .prompt-quick-btn {
@@ -752,5 +851,27 @@
 
   .prompt-form-textarea {
     min-height: 100px;
+  }
+
+  .promo-banner {
+    margin: 8px 10px;
+    padding: 12px;
+  }
+
+  .promo-title {
+    font-size: 13px;
+  }
+
+  .promo-desc {
+    font-size: 11px;
+  }
+
+  .promo-actions {
+    gap: 6px;
+  }
+
+  .promo-btn {
+    padding: 5px 10px;
+    font-size: 11px;
   }
 }

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skool 課程教學內容 (可直接複製)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            color: #1a1a1a;
+            background-color: #ffffff;
+        }
+        h1 {
+            font-size: 2.25em;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #111;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+        }
+        p {
+            margin-bottom: 1rem;
+            font-size: 1.1em;
+        }
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+            font-size: 1.1em;
+        }
+        code {
+            background-color: #f1f5f9;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #ef4444;
+        }
+        pre {
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            margin: 1.5rem 0;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #334155;
+            font-size: 0.95em;
+        }
+        blockquote {
+            border-left: 4px solid #3b82f6;
+            background-color: #eff6ff;
+            margin: 1.5rem 0;
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .highlight-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+        .warning-text {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 3rem 0;
+        }
+        .instruction {
+            background: #2d2d2d;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="instruction">
+        👆 請全選 (Ctrl+A) 並複製 (Ctrl+C) 以下內容，直接貼上到 Skool 編輯器即可保留格式。
+    </div>
+
+    <h1>🚀 AI 提示詞神器：從 0 到 1 安裝與實戰全攻略</h1>
+
+    <p><strong>(建議在此處放一段 3-5 分鐘的螢幕錄影，一次示範安裝＋變數操作)</strong></p>
+
+    <hr>
+
+    <h3>📥 第一步：下載與準備</h3>
+
+    <p>首先，請下載這堂課附帶的擴充功能檔案。</p>
+
+    <ol>
+        <li><strong>下載檔案</strong>：點擊下方的附件連結下載 <code>AI-Prompt-Plus.zip</code>。</li>
+        <li><strong>解壓縮</strong>：將下載的檔案解壓縮到電腦中（建議放在「文件」或不常移動的資料夾）。
+            <ul>
+                <li><span class="warning-text">⚠️ 重要</span>：安裝後這個資料夾 <strong>不能刪除或移動</strong>，否則擴充功能會失效！</li>
+            </ul>
+        </li>
+    </ol>
+
+    <hr>
+
+    <h3>⚙️ 第二步：安裝到 Chrome 瀏覽器</h3>
+
+    <p>因為這個工具是我們社群專屬的強大外掛，尚未上架商店，請依照以下 3 個簡單步驟安裝（只需做一次）：</p>
+
+    <ol>
+        <li><strong>開啟擴充功能管理頁面</strong>：
+            <ul>
+                <li>打開 Chrome 瀏覽器，在網址列輸入 <code>chrome://extensions/</code> 並按 Enter。</li>
+            </ul>
+        </li>
+        <li><strong>開啟開發者模式</strong>：
+            <ul>
+                <li>在頁面右上角，找到 <strong>「開發人員模式 (Developer mode)」</strong> 開關並打開。</li>
+            </ul>
+        </li>
+        <li><strong>載入外掛</strong>：
+            <ul>
+                <li>點擊左上角的 <strong>「載入未封裝項目 (Load unpacked)」</strong> 按鈕。</li>
+                <li>選擇剛剛解壓縮出來的 <code>GPTprompt</code> 資料夾。</li>
+                <li><em>(注意：要選有 manifest.json 檔案的那一層資料夾)</em></li>
+            </ul>
+        </li>
+    </ol>
+
+    <div class="highlight-box">
+        🎉 <strong>成功檢查</strong>：瀏覽器右上角出現一個「綠色對話框」的小圖示，代表安裝成功！建議點擊「圖釘 📌」將它固定在工具列。
+    </div>
+
+    <hr>
+
+    <h3>🔥 第三步：核心功能 - 變數模板 (必學！)</h3>
+
+    <p>這是這個工具最強大的功能。它能把你的 Prompt 變成「填空題」，不用每次手動改來改去。</p>
+
+    <p><strong>操作教學：</strong></p>
+
+    <ol>
+        <li>點擊右上角的外掛圖示，按 <strong>「+ 新增提示詞」</strong>。</li>
+        <li>在內容中使用 <code>[ ]</code> 包住你想變動的地方。</li>
+    </ol>
+
+    <p><strong>💡 範例模板（直接複製試試看）：</strong></p>
+
+    <blockquote>
+        <p><strong>標題</strong>：社群貼文產生器<br>
+        <strong>內容</strong>：</p>
+<pre><code>請幫我為 [產品名稱] 寫一篇 [社群平台] 的貼文。
+目標受眾是 [目標客群]，
+語氣希望是 [語氣風格] 的。
+請包含 3 個吸睛的標題和 Hashtag。</code></pre>
+    </blockquote>
+
+    <p>當你在 ChatGPT 使用這個模板時，它會自動跳出視窗問你：</p>
+    <ul>
+        <li>產品名稱？</li>
+        <li>社群平台？</li>
+        <li>目標客群？</li>
+        <li>語氣風格？</li>
+    </ul>
+
+    <p>填完按 Enter，完美的 Prompt 就自動生成了！</p>
+
+    <hr>
+
+    <h3>⚡ 第四步：在 AI 聊天中快速使用</h3>
+
+    <p>支援 <strong>ChatGPT / Claude / Gemini / Grok</strong> 四大平台。</p>
+
+    <ol>
+        <li>進入 ChatGPT 聊天頁面。</li>
+        <li>你會在輸入框右下角看到一個 <strong>「綠色浮動按鈕」</strong>。</li>
+        <li>點擊按鈕，選擇你要的模板，填入變數，瞬間發送！</li>
+    </ol>
+
+    <p><em>(如果沒看到按鈕，請按 F5 重新整理網頁即可)</em></p>
+
+    <hr>
+
+    <h3>🛡️ 第五步：備份與還原</h3>
+
+    <p>因為資料是儲存在您的電腦瀏覽器中 (Local Storage)，為了避免資料遺失，建議定期備份。</p>
+
+    <ul>
+        <li><strong>匯出 (備份)</strong>：點擊外掛介面右上角的「下載圖示 📥」，會下載一個 <code>.json</code> 檔。</li>
+        <li><strong>匯入 (還原)</strong>：換新電腦時，點擊「上傳圖示 📤」選擇該檔案，所有模板就會回來了。</li>
+    </ul>
+
+    <hr>
+
+    <h3>🎁 課後作業</h3>
+
+    <ol>
+        <li>安裝好擴充功能。</li>
+        <li>建立你的第一個「帶有變數 <code>[ ]</code>」的提示詞。</li>
+        <li>截圖你的提示詞設定畫面，貼在下方留言區分享！</li>
+    </ol>
+
+    <hr>
+    
+    <p><em>(附件區域)</em></p>
+    <ul>
+        <li>📎 <code>AI-Prompt-Plus-v2.0.2.zip</code> (您的擴充功能檔案)</li>
+        <li>📎 <code>Starter-Pack.json</code> (您可以準備一份預設好的 10 個好用 Prompt 讓學生匯入)</li>
+    </ul>
+
+</body>
+</html>

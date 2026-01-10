@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI 提示詞+",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "AI投資學院+ 推薦工具｜支援 ChatGPT、Claude、Gemini、Grok 的提示詞管理工具，支援變數替換、快速插入、雙語介面",
   "icons": {
     "16": "icons/icon16.png",
