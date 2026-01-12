@@ -177,10 +177,9 @@ const I18n = {
   t(key, params = {}) {
     let text = this.messages[this.currentLang]?.[key] || this.messages['zh-TW'][key] || key;
 
-    // 替換參數
-    Object.keys(params).forEach(param => {
-      text = text.replace(`{${param}}`, params[param]);
-    });
+    for (const [param, value] of Object.entries(params)) {
+      text = text.replace(`{${param}}`, value);
+    }
 
     return text;
   },

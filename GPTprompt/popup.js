@@ -67,6 +67,21 @@ async function initializeDefaultPrompts() {
 }
 
 /**
+ * 插入變數到文字區域
+ */
+function insertVariableToTextarea(varKey) {
+  const varName = I18n.t(varKey);
+  const textarea = document.getElementById('promptContent');
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+
+  textarea.value = text.substring(0, start) + `[${varName}]` + text.substring(end);
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + varName.length + 2;
+}
+
+/**
  * 設置事件監聽器
  */
 function setupEventListeners() {
@@ -93,19 +108,7 @@ function setupEventListeners() {
 
   // 快速插入變數按鈕
   document.querySelectorAll('.var-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const varKey = btn.dataset.varKey;
-      const varName = I18n.t(varKey);
-      const textarea = document.getElementById('promptContent');
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = textarea.value;
-      const before = text.substring(0, start);
-      const after = text.substring(end);
-      textarea.value = before + `[${varName}]` + after;
-      textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + varName.length + 2;
-    });
+    btn.addEventListener('click', () => insertVariableToTextarea(btn.dataset.varKey));
   });
 
   // 匯出/匯入
@@ -138,13 +141,18 @@ async function handleLanguageSwitch() {
 }
 
 /**
+ * 獲取多語言訊息
+ */
+function getLocalizedMessage(zhMessage, enMessage) {
+  return I18n.currentLang === 'zh-TW' ? zhMessage : enMessage;
+}
+
+/**
  * 處理載入預設提示詞
  */
 async function handleLoadDefaultPrompts() {
-  // 詢問用戶要載入哪種語言的預設提示詞
   const browserLang = navigator.language || navigator.userLanguage || 'en';
   const isChineseBrowser = browserLang.startsWith('zh');
-
   let loadLang = I18n.currentLang;
 
   // 如果界面語言和瀏覽器語言不一致，詢問用戶
@@ -152,65 +160,50 @@ async function handleLoadDefaultPrompts() {
                   (I18n.currentLang === 'en' && isChineseBrowser);
 
   if (needAsk) {
-    const askMessage = I18n.currentLang === 'zh-TW'
-      ? '您的瀏覽器是英文，要載入英文版預設提示詞嗎？\n\n點擊「確定」載入英文版\n點擊「取消」載入中文版'
-      : 'Your browser is Chinese, load Chinese prompts?\n\nOK = Chinese version\nCancel = English version';
-
+    const askMessage = getLocalizedMessage(
+      '您的瀏覽器是英文，要載入英文版預設提示詞嗎？\n\n點擊「確定」載入英文版\n點擊「取消」載入中文版',
+      'Your browser is Chinese, load Chinese prompts?\n\nOK = Chinese version\nCancel = English version'
+    );
     const useEnglish = confirm(askMessage);
     loadLang = useEnglish ? 'en' : 'zh-TW';
   }
 
-  const message = I18n.currentLang === 'zh-TW'
-    ? `要載入 10 個預設提示詞嗎？(${loadLang === 'zh-TW' ? '中文版' : '英文版'})\n\n這不會刪除你現有的提示詞，會合併在一起。`
-    : `Load 10 default prompts? (${loadLang === 'zh-TW' ? 'Chinese' : 'English'} version)\n\nThis will not delete your existing prompts, they will be merged.`;
+  const langLabel = loadLang === 'zh-TW' ? getLocalizedMessage('中文版', 'Chinese') : getLocalizedMessage('英文版', 'English');
+  const message = getLocalizedMessage(
+    `要載入 10 個預設提示詞嗎？(${langLabel})\n\n這不會刪除你現有的提示詞，會合併在一起。`,
+    `Load 10 default prompts? (${langLabel} version)\n\nThis will not delete your existing prompts, they will be merged.`
+  );
 
   if (!confirm(message)) {
     return;
   }
 
   try {
-    // 獲取當前的提示詞
     const result = await chrome.storage.local.get('prompts');
     const existingPrompts = result.prompts || [];
-
-    // 獲取對應語言的預設提示詞
     const defaultPrompts = DefaultPrompts.getDefaultPrompts(loadLang);
 
-    // 檢查哪些預設提示詞還沒有（根據 ID）
     const existingIds = new Set(existingPrompts.map(p => p.id));
     const newPrompts = defaultPrompts.filter(p => !existingIds.has(p.id));
 
     if (newPrompts.length === 0) {
-      const alreadyLoadedMsg = I18n.currentLang === 'zh-TW'
-        ? '所有預設提示詞都已經存在了！'
-        : 'All default prompts already exist!';
-      alert(alreadyLoadedMsg);
+      alert(getLocalizedMessage('所有預設提示詞都已經存在了！', 'All default prompts already exist!'));
       return;
     }
 
-    // 合併提示詞
-    const mergedPrompts = [...existingPrompts, ...newPrompts];
-
-    // 儲存
     await chrome.storage.local.set({
-      prompts: mergedPrompts,
+      prompts: [...existingPrompts, ...newPrompts],
       defaultPromptsLoaded: true
     });
 
-    // 重新載入列表
     await loadPrompts(searchInput.value);
-
-    // 顯示成功訊息
-    const successMsg = I18n.currentLang === 'zh-TW'
-      ? `成功載入 ${newPrompts.length} 個預設提示詞！`
-      : `Successfully loaded ${newPrompts.length} default prompts!`;
-    alert(successMsg);
+    alert(getLocalizedMessage(
+      `成功載入 ${newPrompts.length} 個預設提示詞！`,
+      `Successfully loaded ${newPrompts.length} default prompts!`
+    ));
   } catch (error) {
     console.error('載入預設提示詞失敗:', error);
-    const errorMsg = I18n.currentLang === 'zh-TW'
-      ? '載入失敗，請重試'
-      : 'Load failed, please try again';
-    alert(errorMsg);
+    alert(getLocalizedMessage('載入失敗，請重試', 'Load failed, please try again'));
   }
 }
 
@@ -465,38 +458,34 @@ async function handleInsertPrompt() {
 }
 
 /**
+ * 使用備用方式複製到剪貼簿
+ */
+function copyWithFallback(content) {
+  const textarea = document.createElement('textarea');
+  textarea.value = content;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+}
+
+/**
  * 複製內容到剪貼簿
  */
 async function insertToPage(content) {
   try {
-    // 使用 Clipboard API 複製到剪貼簿
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(content);
     } else {
-      // 備用方案：使用 execCommand
-      const textarea = document.createElement('textarea');
-      textarea.value = content;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
+      copyWithFallback(content);
     }
 
-    // 顯示複製成功提示
-    const successMsg = I18n.currentLang === 'zh-TW'
-      ? '已複製到剪貼簿！'
-      : 'Copied to clipboard!';
-
-    // 短暫顯示成功訊息後關閉
-    showCopySuccess(successMsg);
+    showCopySuccess(getLocalizedMessage('已複製到剪貼簿！', 'Copied to clipboard!'));
   } catch (error) {
     console.error('複製失敗:', error);
-    const errorMsg = I18n.currentLang === 'zh-TW'
-      ? '複製失敗，請重試'
-      : 'Copy failed, please try again';
-    alert(errorMsg);
+    alert(getLocalizedMessage('複製失敗，請重試', 'Copy failed, please try again'));
   }
 }
 

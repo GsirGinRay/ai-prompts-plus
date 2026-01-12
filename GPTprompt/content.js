@@ -218,9 +218,9 @@ const i18nMessages = {
 // 獲取翻譯文本
 function t(key, params = {}) {
   let text = i18nMessages[currentLang]?.[key] || i18nMessages['zh-TW'][key] || key;
-  Object.keys(params).forEach(param => {
-    text = text.replace(`{${param}}`, params[param]);
-  });
+  for (const [param, value] of Object.entries(params)) {
+    text = text.replace(`{${param}}`, value);
+  }
   return text;
 }
 
@@ -575,10 +575,111 @@ function replaceVariables(content, values) {
 }
 
 /**
+ * 為按鈕設定固定定位樣式（備用方案）
+ */
+function applyFixedPositionStyle(button) {
+  button.classList.add('fixed-position');
+  button.style.position = 'fixed';
+  button.style.bottom = '90px';
+  button.style.right = '30px';
+  button.style.top = 'auto';
+  button.style.zIndex = '9999';
+}
+
+/**
+ * 為按鈕設定居中樣式
+ */
+function applyCenteredButtonStyle(button, options = {}) {
+  const { marginBottom = '12px', width = '100%', maxWidth = 'none' } = options;
+  button.style.marginBottom = marginBottom;
+  button.style.marginTop = '0';
+  button.style.marginLeft = 'auto';
+  button.style.marginRight = 'auto';
+  button.style.display = 'inline-flex';
+  button.style.position = 'relative';
+  button.style.width = width;
+  button.style.maxWidth = maxWidth;
+  button.style.justifyContent = 'center';
+  button.style.boxSizing = 'border-box';
+}
+
+/**
+ * 嘗試在 Claude 平台插入按鈕
+ */
+function insertButtonForClaude(button) {
+  // 方法1：通過 data-testid="chat-input" 找到輸入框，然後向上找到主容器
+  const chatInput = document.querySelector('[data-testid="chat-input"]');
+  if (chatInput) {
+    const container = chatInput.closest('div.flex.flex-col.bg-bg-000');
+    if (container && container.parentElement) {
+      const computedStyle = window.getComputedStyle(container);
+      applyCenteredButtonStyle(button);
+      button.style.width = computedStyle.width;
+      button.style.marginLeft = computedStyle.marginLeft;
+      button.style.marginRight = computedStyle.marginRight;
+      container.parentElement.insertBefore(button, container);
+      console.log('Claude: 按鈕插入到輸入框容器之前（通過 chat-input）');
+      return true;
+    }
+  }
+
+  // 方法2：直接找輸入框容器
+  const inputArea = document.querySelector('div.flex.flex-col.bg-bg-000');
+  if (inputArea && inputArea.parentElement) {
+    const computedStyle = window.getComputedStyle(inputArea);
+    applyCenteredButtonStyle(button);
+    button.style.width = computedStyle.width;
+    button.style.marginLeft = computedStyle.marginLeft;
+    button.style.marginRight = computedStyle.marginRight;
+    inputArea.parentElement.insertBefore(button, inputArea);
+    console.log('Claude: 按鈕插入到輸入框容器之前');
+    return true;
+  }
+
+  // 方法3：舊版選擇器（向後兼容）
+  const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
+  if (claudeTopContainer && claudeTopContainer.firstElementChild) {
+    applyCenteredButtonStyle(button);
+    claudeTopContainer.insertBefore(button, claudeTopContainer.firstElementChild);
+    console.log('Claude: 按鈕插入到舊版容器');
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * 嘗試在 Grok 平台插入按鈕
+ */
+function insertButtonForGrok(button) {
+  // 方法1：找到 query-bar 容器
+  const queryBar = document.querySelector('.query-bar');
+  if (queryBar && queryBar.firstElementChild) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px', maxWidth: 'breakout' });
+    queryBar.insertBefore(button, queryBar.firstElementChild);
+    console.log('Grok: 按鈕插入到 query-bar 內部第一個元素之前');
+    return true;
+  }
+
+  // 方法2：找到外層容器
+  const grokInputContainer = document.querySelector('.flex.flex-col.gap-0.justify-center.w-full.relative.items-center');
+  if (grokInputContainer) {
+    const innerQueryBar = grokInputContainer.querySelector('.query-bar');
+    if (innerQueryBar) {
+      applyCenteredButtonStyle(button, { marginBottom: '4px', maxWidth: 'breakout' });
+      grokInputContainer.insertBefore(button, innerQueryBar);
+      console.log('Grok: 按鈕插入到 query-bar 之前');
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * 建立快速訪問按鈕
  */
 function createQuickAccessButton() {
-  // 檢查是否已存在按鈕
   if (document.getElementById('prompt-manager-quick-btn')) return;
 
   const button = document.createElement('button');
@@ -591,179 +692,47 @@ function createQuickAccessButton() {
     <span>${t('prompts')}</span>
   `;
   button.title = t('openPromptManager');
+  button.addEventListener('click', togglePromptPanel);
 
-  button.addEventListener('click', () => {
-    togglePromptPanel();
-  });
-
-  // 嘗試找到輸入框容器
+  const platform = currentPlatform || detectPlatform();
   const inputContainer = findInputContainer();
 
+  // Claude 平台特殊處理
+  if (platform === PLATFORMS.CLAUDE) {
+    if (insertButtonForClaude(button)) return;
+    applyFixedPositionStyle(button);
+    document.body.appendChild(button);
+    console.log('Claude: 備用方案 - 使用固定定位按鈕');
+    return;
+  }
+
+  // Grok 平台特殊處理
+  if (platform === PLATFORMS.GROK) {
+    if (insertButtonForGrok(button)) return;
+    applyFixedPositionStyle(button);
+    document.body.appendChild(button);
+    console.log('Grok: 備用方案 - 使用固定定位按鈕');
+    return;
+  }
+
+  // Gemini 和 ChatGPT 通用處理
   if (inputContainer && inputContainer.parentElement) {
-    // 找到了輸入框容器
     console.log('找到輸入框容器:', inputContainer.className);
 
-    // 對於 Gemini，需要找到更外層的父容器
-    // 向上查找，同時記錄路徑
     let targetParent = inputContainer.parentElement;
-    let referenceNode = inputContainer; // 用於 insertBefore 的參考節點
+    let referenceNode = inputContainer;
 
-    // 如果是 Gemini 平台，只向上找 1 層
-    // 這樣按鈕會更貼近輸入框
-    const platform = currentPlatform || detectPlatform();
-    if (platform === PLATFORMS.GEMINI) {
-      // 只向上找一層：input-area -> input-area-container
-      if (targetParent.parentElement) {
-        console.log('向上一層到:', targetParent.parentElement.className);
-        referenceNode = targetParent; // 更新參考節點
-        targetParent = targetParent.parentElement;
-      }
-
-      // 不再繼續向上，保持在這一層
-      console.log('停止向上查找，使用當前層級');
-    } else if (platform === PLATFORMS.CLAUDE) {
-      // Claude 特殊處理：插入到輸入框容器之前
-
-      // 方法1：通過 data-testid="chat-input" 找到輸入框，然後向上找到主容器
-      const chatInput = document.querySelector('[data-testid="chat-input"]');
-      if (chatInput) {
-        // 向上查找包含 bg-bg-000 的容器（這是輸入框的主容器）
-        let inputContainer = chatInput.closest('div.flex.flex-col.bg-bg-000');
-        if (inputContainer && inputContainer.parentElement) {
-          // 複製輸入框容器的寬度相關樣式，確保按鈕和輸入框同寬
-          const computedStyle = window.getComputedStyle(inputContainer);
-          button.style.marginBottom = '12px';
-          button.style.marginTop = '0';
-          button.style.width = computedStyle.width; // 使用輸入框的實際寬度
-          button.style.maxWidth = 'none';
-          button.style.marginLeft = computedStyle.marginLeft;
-          button.style.marginRight = computedStyle.marginRight;
-          button.style.justifyContent = 'center';
-          button.style.display = 'inline-flex';
-          button.style.position = 'relative';
-          button.style.boxSizing = 'border-box';
-          inputContainer.parentElement.insertBefore(button, inputContainer);
-          console.log('Claude: 按鈕插入到輸入框容器之前（通過 chat-input），寬度:', computedStyle.width);
-          return;
-        }
-      }
-
-      // 方法2：直接找輸入框容器（不依賴 mx-2，因為桌面端是 mx-0）
-      const inputArea = document.querySelector('div.flex.flex-col.bg-bg-000');
-      if (inputArea && inputArea.parentElement) {
-        const computedStyle = window.getComputedStyle(inputArea);
-        button.style.marginBottom = '12px';
-        button.style.marginTop = '0';
-        button.style.width = computedStyle.width;
-        button.style.maxWidth = 'none';
-        button.style.marginLeft = computedStyle.marginLeft;
-        button.style.marginRight = computedStyle.marginRight;
-        button.style.justifyContent = 'center';
-        button.style.display = 'inline-flex';
-        button.style.position = 'relative';
-        button.style.boxSizing = 'border-box';
-        inputArea.parentElement.insertBefore(button, inputArea);
-        console.log('Claude: 按鈕插入到輸入框容器之前');
-        return;
-      }
-
-      // 方法3：舊版選擇器（向後兼容）
-      const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
-      if (claudeTopContainer) {
-        const firstChild = claudeTopContainer.firstElementChild;
-        if (firstChild) {
-          button.style.marginBottom = '12px';
-          button.style.marginLeft = 'auto';
-          button.style.marginRight = 'auto';
-          button.style.display = 'inline-flex';
-          button.style.position = 'relative';
-          button.style.width = '100%';
-          button.style.maxWidth = 'none';
-          button.style.justifyContent = 'center';
-          claudeTopContainer.insertBefore(button, firstChild);
-          console.log('Claude: 按鈕插入到舊版容器');
-          return;
-        }
-      }
-
-      // 備用方案：使用固定定位
-      button.classList.add('fixed-position');
-      button.style.position = 'fixed';
-      button.style.bottom = '90px';
-      button.style.right = '30px';
-      button.style.top = 'auto';
-      button.style.zIndex = '9999';
-      document.body.appendChild(button);
-      console.log('Claude: 備用方案 - 使用固定定位按鈕');
-      return;
-    } else if (platform === PLATFORMS.GROK) {
-      // Grok 特殊處理：插入到 query-bar 對話框**外面**、輸入框上方
-      
-      // 找到 query-bar 容器
-      const queryBar = document.querySelector('.query-bar');
-      
-      if (queryBar) {
-        // 找到 query-bar 內部的第一個子元素（.w-full.ps-4.pe-2）
-        const firstChild = queryBar.firstElementChild;
-        
-        if (firstChild) {
-          // 在第一個子元素之前插入按鈕
-          // 這樣按鈕會在 query-bar 內部，但不在 .px-12 裡面
-          button.style.marginBottom = '4px';
-          button.style.marginTop = '0';
-          button.style.marginLeft = 'auto';
-          button.style.marginRight = 'auto';
-          button.style.display = 'inline-flex';
-          button.style.position = 'relative';
-          button.style.width = '100%';
-          button.style.maxWidth = 'breakout';  // 跟 query-bar 一樣的最大寬度
-          button.style.justifyContent = 'center';
-          
-          queryBar.insertBefore(button, firstChild);
-          console.log('Grok: 按鈕插入到 query-bar 內部第一個元素之前');
-          return;
-        }
-      }
-      
-      // 備用方法：找到外層容器
-      const grokInputContainer = document.querySelector('.flex.flex-col.gap-0.justify-center.w-full.relative.items-center');
-      if (grokInputContainer) {
-        const queryBar = grokInputContainer.querySelector('.query-bar');
-        if (queryBar) {
-          button.style.marginBottom = '4px';
-          button.style.width = '100%';
-          button.style.maxWidth = 'breakout';
-          button.style.marginLeft = 'auto';
-          button.style.marginRight = 'auto';
-          button.style.justifyContent = 'center';
-          grokInputContainer.insertBefore(button, queryBar);
-          console.log('Grok: 按鈕插入到 query-bar 之前');
-          return;
-        }
-      }
-
-      // 備用方案：使用固定定位
-      button.classList.add('fixed-position');
-      button.style.position = 'fixed';
-      button.style.bottom = '90px';
-      button.style.right = '30px';
-      button.style.top = 'auto';
-      button.style.zIndex = '9999';
-      document.body.appendChild(button);
-      console.log('Grok: 備用方案 - 使用固定定位按鈕');
-      return;
+    // Gemini 平台：向上找一層
+    if (platform === PLATFORMS.GEMINI && targetParent.parentElement) {
+      console.log('向上一層到:', targetParent.parentElement.className);
+      referenceNode = targetParent;
+      targetParent = targetParent.parentElement;
     }
 
     console.log('最終選擇的插入位置:', targetParent.className);
-    console.log('參考節點（插入到它之前）:', referenceNode.className || referenceNode.tagName);
-
-    // 使用 insertBefore 將按鈕插入到 referenceNode 之前
     targetParent.insertBefore(button, referenceNode);
-
-    console.log('✅ 按鈕已插入');
+    console.log('按鈕已插入');
   } else {
-    // 找不到輸入框容器，使用固定定位作為備用方案
-    // 不顯示日誌，因為重試機制會繼續嘗試
     button.classList.add('fixed-position');
     document.body.appendChild(button);
   }
@@ -900,6 +869,20 @@ async function createPromptPanel() {
 }
 
 /**
+ * 嘗試從選擇器列表中找到第一個匹配的元素
+ */
+function findFirstMatch(selectors, logPrefix = '') {
+  for (const selector of selectors) {
+    const element = document.querySelector(selector);
+    if (element) {
+      if (logPrefix) console.log(`${logPrefix}:`, selector);
+      return element;
+    }
+  }
+  return null;
+}
+
+/**
  * 找到輸入框容器（支援多平台）
  */
 function findInputContainer() {
@@ -907,27 +890,18 @@ function findInputContainer() {
 
   // Claude 特殊處理
   if (platform === PLATFORMS.CLAUDE) {
-    // 方法1：使用專用的 inputContainer 選擇器
     const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
-    for (const selector of containerSelectors) {
-      const container = document.querySelector(selector);
-      if (container) {
-        console.log('找到 Claude 輸入框容器:', selector);
-        return container;
-      }
-    }
+    const container = findFirstMatch(containerSelectors, '找到 Claude 輸入框容器');
+    if (container) return container;
 
-    // 方法2：直接找 Claude 輸入框的主要容器（新的 HTML 結構）
     const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
     if (claudeTopContainer) {
       console.log('找到 Claude 頂部容器');
       return claudeTopContainer;
     }
 
-    // 方法3：找 ProseMirror 編輯器
     const proseMirror = document.querySelector('.tiptap.ProseMirror[data-testid="chat-input"]');
     if (proseMirror) {
-      // 向上找三層找到主要容器
       let parent = proseMirror.parentElement;
       for (let i = 0; i < 3 && parent; i++) {
         parent = parent.parentElement;
@@ -941,65 +915,45 @@ function findInputContainer() {
 
   // Grok 特殊處理
   if (platform === PLATFORMS.GROK) {
-    // 方法1：使用專用的 inputContainer 選擇器
     const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
-    for (const selector of containerSelectors) {
-      const container = document.querySelector(selector);
-      if (container) {
-        console.log('找到 Grok 輸入框容器:', selector);
-        return container;
-      }
-    }
+    const container = findFirstMatch(containerSelectors, '找到 Grok 輸入框容器');
+    if (container) return container;
 
-    // 方法2：直接找 Grok form
     const grokForm = document.querySelector('form.w-full.text-base.flex.flex-col.gap-2.items-center.justify-center.relative.z-10.mt-2');
     if (grokForm) {
       console.log('找到 Grok 表單容器');
       return grokForm;
     }
 
-    // 方法3：找 contenteditable div（Grok 使用 tiptap 編輯器）
     const grokEditor = document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
-    if (grokEditor) {
-      const parent = grokEditor.parentElement;
-      if (parent) {
-        console.log('通過 Grok contenteditable 找到容器');
-        return parent.parentElement;
-      }
+    if (grokEditor && grokEditor.parentElement) {
+      console.log('通過 Grok contenteditable 找到容器');
+      return grokEditor.parentElement.parentElement;
     }
   }
 
-  // Gemini 特殊處理：直接找 input-area 容器
+  // Gemini 特殊處理
   if (platform === PLATFORMS.GEMINI) {
-    const containerSelectors = [
+    const geminiSelectors = [
       'div[data-node-type="input-area"]',
       'div.input-area',
       'div.text-input-field'
     ];
-
-    for (const selector of containerSelectors) {
-      const container = document.querySelector(selector);
-      if (container) {
-        console.log('找到 Gemini 輸入框容器:', selector);
-        return container;
-      }
-    }
+    const container = findFirstMatch(geminiSelectors, '找到 Gemini 輸入框容器');
+    if (container) return container;
   }
 
   // 通用方法：找 textarea 然後找容器
   const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
-
   for (const selector of selectors) {
     const textarea = document.querySelector(selector);
     if (textarea) {
-      // 找到最接近的表單容器
       const container = textarea.closest('form') || textarea.parentElement;
       console.log('通過 textarea 找到容器:', selector);
       return container;
     }
   }
 
-  // 不顯示警告，因為重試機制會處理
   return null;
 }
 
@@ -1599,52 +1553,40 @@ new MutationObserver((mutations) => {
   }
 }).observe(document.body, { subtree: true, childList: true });
 
-// Claude 專用：定期檢查按鈕是否還在，否則重新創建
-// Claude 的 React 會重新渲染 DOM，按鈕可能被移除，需要定期檢查
-if (detectPlatform() === PLATFORMS.CLAUDE) {
+// 平台專用：定期檢查按鈕是否還在，否則重新創建
+// React/SPA 框架可能會重新渲染 DOM，按鈕可能被移除
+const detectedPlatform = detectPlatform();
+if (detectedPlatform === PLATFORMS.CLAUDE || detectedPlatform === PLATFORMS.GROK) {
   let isRecreating = false;
-  setInterval(() => {
-    if (isRecreating) return; // 防止同時多次創建
-    
-    const button = document.getElementById('prompt-manager-quick-btn');
-    if (!button) {
-      isRecreating = true;
-      console.log('Claude: 按鈕被移除，2秒後重新創建...');
-      
-      setTimeout(() => {
-        // 檢查 Claude 容器是否存在（使用新版選擇器）
-        const chatInput = document.querySelector('[data-testid="chat-input"]');
-        const inputContainer = document.querySelector('div.flex.flex-col.bg-bg-000');
 
-        if (chatInput || inputContainer) {
-          console.log('Claude: 重新創建按鈕');
-          retryCreateButton();
-        }
-        isRecreating = false;
-      }, 2000);
+  const platformConfig = {
+    [PLATFORMS.CLAUDE]: {
+      name: 'Claude',
+      containerSelectors: ['[data-testid="chat-input"]', 'div.flex.flex-col.bg-bg-000']
+    },
+    [PLATFORMS.GROK]: {
+      name: 'Grok',
+      containerSelectors: ['div[contenteditable="true"].tiptap.ProseMirror', '.query-bar']
     }
-  }, 3000);
-}
+  };
 
-// Grok 專用：定期檢查按鈕是否還在，否則重新創建
-// Grok 的頁面可能會動態更新
-if (detectPlatform() === PLATFORMS.GROK) {
-  let isRecreating = false;
+  const config = platformConfig[detectedPlatform];
+
   setInterval(() => {
-    if (isRecreating) return; // 防止同時多次創建
+    if (isRecreating) return;
 
     const button = document.getElementById('prompt-manager-quick-btn');
     if (!button) {
       isRecreating = true;
-      console.log('Grok: 按鈕被移除，2秒後重新創建...');
+      console.log(`${config.name}: 按鈕被移除，2秒後重新創建...`);
 
       setTimeout(() => {
-        // 檢查 Grok 容器是否存在（使用正確的 contenteditable 選擇器）
-        const grokEditor = document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
-        const grokQueryBar = document.querySelector('.query-bar');
+        const containerExists = config.containerSelectors.some(selector =>
+          document.querySelector(selector)
+        );
 
-        if (grokEditor || grokQueryBar) {
-          console.log('Grok: 重新創建按鈕');
+        if (containerExists) {
+          console.log(`${config.name}: 重新創建按鈕`);
           retryCreateButton();
         }
         isRecreating = false;
