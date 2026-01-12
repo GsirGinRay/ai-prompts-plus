@@ -34,6 +34,8 @@ GPTprompt/README.md
 
 # Claude Code 設定
 .claude/
+tmpclaude-*
+**/tmpclaude-*
 
 # 舊版資料
 舊版/
