@@ -78,7 +78,6 @@ AI 提示詞+ 是一款提示詞管理工具，支援 ChatGPT、Claude、Google 
 
 權限說明：
 - storage：在本機儲存提示詞和設定
-- activeTab：讀取當前頁面以插入提示詞
 - host_permissions：在支援的 AI 網站顯示功能按鈕
 
 ## 開放原始碼
