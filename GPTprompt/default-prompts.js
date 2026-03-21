@@ -481,7 +481,3 @@ Please write:
   }
 };
 
-// 如果在 window 環境中，將其掛載到 window
-if (typeof window !== 'undefined') {
-  window.DefaultPrompts = DefaultPrompts;
-}

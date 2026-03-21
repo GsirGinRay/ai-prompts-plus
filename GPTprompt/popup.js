@@ -60,9 +60,8 @@ async function initializeDefaultPrompts() {
       defaultPromptsLoaded: true
     });
 
-    console.log(`已載入 ${defaultPrompts.length} 個預設提示詞 (${I18n.currentLang})`);
   } catch (error) {
-    console.error('載入預設提示詞失敗:', error);
+    // 靜默處理
   }
 }
 
@@ -202,7 +201,6 @@ async function handleLoadDefaultPrompts() {
       `Successfully loaded ${newPrompts.length} default prompts!`
     ));
   } catch (error) {
-    console.error('載入預設提示詞失敗:', error);
     alert(getLocalizedMessage('載入失敗，請重試', 'Load failed, please try again'));
   }
 }
@@ -218,7 +216,7 @@ async function loadPrompts(query = '') {
 
     renderPrompts(prompts);
   } catch (error) {
-    console.error('載入提示詞失敗:', error);
+    // 靜默處理
   }
 }
 
@@ -361,7 +359,6 @@ async function handleSavePrompt() {
     closeEditModal();
     await loadPrompts(searchInput.value);
   } catch (error) {
-    console.error('儲存失敗:', error);
     alert(I18n.t('saveFailed'));
   }
 }
@@ -378,7 +375,6 @@ async function deletePrompt(id) {
     await StorageManager.deletePrompt(id);
     await loadPrompts(searchInput.value);
   } catch (error) {
-    console.error('刪除失敗:', error);
     alert(I18n.t('deleteFailed'));
   }
 }
@@ -484,7 +480,6 @@ async function insertToPage(content) {
 
     showCopySuccess(getLocalizedMessage('已複製到剪貼簿！', 'Copied to clipboard!'));
   } catch (error) {
-    console.error('複製失敗:', error);
     alert(getLocalizedMessage('複製失敗，請重試', 'Copy failed, please try again'));
   }
 }
@@ -531,7 +526,6 @@ async function handleExport() {
     a.click();
     URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('匯出失敗:', error);
     alert(I18n.t('exportFailed'));
   }
 }
@@ -551,7 +545,6 @@ async function handleImport(e) {
       await loadPrompts();
       fileInput.value = ''; // 清空文件輸入
     } catch (error) {
-      console.error('匯入失敗:', error);
       alert(I18n.t('importFailed'));
     }
   };

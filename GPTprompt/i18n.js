@@ -210,18 +210,5 @@ const I18n = {
     document.documentElement.lang = this.currentLang;
   },
 
-  /**
-   * 獲取所有支援的語言
-   */
-  getSupportedLanguages() {
-    return [
-      { code: 'zh-TW', name: this.messages['zh-TW'].languageZhTW },
-      { code: 'en', name: this.messages['en'].languageEn }
-    ];
-  }
 };
 
-// 如果在 window 環境中，將 I18n 掛載到 window
-if (typeof window !== 'undefined') {
-  window.I18n = I18n;
-}
