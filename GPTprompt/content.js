@@ -562,68 +562,72 @@ function applyCenteredButtonStyle(button, options = {}) {
 /**
  * 嘗試在 Claude 平台插入按鈕
  */
-function insertComposerOverlayButton(button, className) {
-  // Keep extension-owned UI outside each site's framework-managed composer tree.
-  button.classList.add(className);
-  button.style.position = 'fixed';
-  button.style.left = '50%';
-  button.style.bottom = '88px';
-  button.style.transform = 'translateX(-50%)';
-  button.style.width = 'min(768px, calc(100vw - 32px))';
-  button.style.margin = '0';
-  button.style.justifyContent = 'center';
-  button.style.boxSizing = 'border-box';
-  button.style.pointerEvents = 'auto';
-  button.style.zIndex = '2147483646';
-  document.body.appendChild(button);
-  positionComposerOverlayButton(button);
+function insertButtonForClaude(button) {
+  const chatInput = findComposer();
+  const container = chatInput?.closest('div.flex.flex-col.bg-bg-000') || findInputContainer();
+  if (!container) return false;
+
+  if (container.matches('.top-5.z-10.mx-auto.w-full.max-w-2xl')) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    button.style.marginLeft = '0';
+    button.style.marginRight = '0';
+    container.insertBefore(button, container.firstElementChild);
+    return true;
+  }
+
+  if (!container.parentElement) return false;
+  const computedStyle = window.getComputedStyle(container);
+  applyCenteredButtonStyle(button, { marginBottom: '4px' });
+  button.style.width = computedStyle.width;
+  button.style.marginLeft = computedStyle.marginLeft;
+  button.style.marginRight = computedStyle.marginRight;
+  container.parentElement.insertBefore(button, container);
   return true;
 }
 
-function positionComposerOverlayButton(button) {
+function insertButtonForChatGPT(button) {
   const composer = findComposer();
-  if (!composer) {
-    button.style.top = 'auto';
-    button.style.bottom = '88px';
-    button.style.left = '50%';
-    button.style.width = 'min(768px, calc(100vw - 32px))';
-    return;
+  const composerForm = document.querySelector('form[data-type="unified-composer"]') || composer?.closest('form');
+  if (composerForm) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    composerForm.insertBefore(button, composerForm.firstElementChild);
+    return true;
   }
 
-  const anchor = composer.closest('fieldset') || composer.closest('form') || composer;
-  const anchorRect = anchor.getBoundingClientRect();
-  const availableWidth = Math.max(240, Math.min(anchorRect.width, window.innerWidth - 32));
-  const buttonHeight = button.offsetHeight || 38;
-  button.style.bottom = 'auto';
-  button.style.left = `${anchorRect.left + (anchorRect.width / 2)}px`;
-  button.style.top = `${Math.max(8, anchorRect.top - buttonHeight - 8)}px`;
-  button.style.width = `${availableWidth}px`;
-}
-function positionChatGPTButton(button) {
-  positionComposerOverlayButton(button);
-}
-
-function positionClaudeButton(button) {
-  positionComposerOverlayButton(button);
-}
-
-function insertButtonForClaude(button) {
-  return insertComposerOverlayButton(button, 'claude-composer-overlay');
-}
-
-function insertButtonForChatGPT(button) {
-  return insertComposerOverlayButton(button, 'chatgpt-composer-overlay');
+  if (composer?.parentElement?.parentElement) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    composer.parentElement.parentElement.insertBefore(button, composer.parentElement);
+    return true;
+  }
+  return false;
 }
 
 function insertButtonForGemini(button) {
-  return insertComposerOverlayButton(button, 'gemini-composer-overlay');
+  const container = findInputContainer();
+  if (!container?.parentElement) return false;
+
+  applyCenteredButtonStyle(button, { marginBottom: '4px' });
+  const width = container.getBoundingClientRect().width;
+  if (width > 0) button.style.width = `${width}px`;
+  container.parentElement.insertBefore(button, container);
+  return true;
 }
 
-/**
- * 嘗試在 Grok 平台插入按鈕
- */
 function insertButtonForGrok(button) {
-  return insertComposerOverlayButton(button, 'grok-composer-overlay');
+  const queryBar = document.querySelector('.query-bar');
+  if (queryBar) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    queryBar.insertBefore(button, queryBar.firstElementChild);
+    return true;
+  }
+
+  const container = findInputContainer();
+  if (!container?.parentElement) return false;
+  applyCenteredButtonStyle(button, { marginBottom: '4px' });
+  const width = container.getBoundingClientRect().width;
+  if (width > 0) button.style.width = `${width}px`;
+  container.parentElement.insertBefore(button, container);
+  return true;
 }
 
 /**
@@ -643,7 +647,11 @@ function createQuickAccessButton() {
     <span>${t('prompts')}</span>
   `;
   button.title = t('openPromptManager');
-  button.addEventListener('pointerdown', captureComposerSelection, { capture: true });
+  button.addEventListener('pointerdown', event => {
+    captureComposerSelection();
+    event.preventDefault();
+    event.stopPropagation();
+  }, { capture: true });
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
@@ -1645,8 +1653,7 @@ function scheduleButtonRecovery(delay = 250) {
     if (!buttonInjectionReady) return;
     if (location.href !== lastUrl) lastUrl = location.href;
     ensurePromptPanelHost();
-    const button = document.getElementById('prompt-manager-quick-btn') || retryCreateButton();
-    if (button?.isConnected) positionComposerOverlayButton(button);
+    retryCreateButton();
   }, delay);
 }
 

@@ -25,15 +25,13 @@ test('selector configuration keeps a distinct entry for every supported platform
   });
 });
 
-test('platform selector lookup fails safely and all quick buttons stay outside host composer trees', () => {
+test('platform selector lookup fails safely and restores the 2.0.6 composer placement', () => {
   assert.doesNotMatch(content, /PLATFORM_SELECTORS\[platform\]\.inputContainer/);
   assert.match(content, /PLATFORM_SELECTORS\[platform\]\?\.inputContainer \|\| \[\]/);
-  assert.match(content, /function insertComposerOverlayButton\(button, className\) \{[\s\S]*document\.body\.appendChild\(button\)/);
-  assert.match(content, /function insertButtonForChatGPT\(button\) \{[\s\S]*return insertComposerOverlayButton\(button/);
-  assert.match(content, /function insertButtonForClaude\(button\) \{[\s\S]*return insertComposerOverlayButton\(button/);
-  assert.match(content, /function insertButtonForGemini\(button\) \{[\s\S]*return insertComposerOverlayButton\(button/);
-  assert.match(content, /function insertButtonForGrok\(button\) \{[\s\S]*return insertComposerOverlayButton\(button/);
-  assert.match(content, /function scheduleButtonRecovery[\s\S]*positionComposerOverlayButton\(button\)/);
+  assert.match(content, /function insertButtonForChatGPT\(button\) \{[\s\S]*composerForm\.insertBefore\(button, composerForm\.firstElementChild\)/);
+  assert.match(content, /function insertButtonForClaude\(button\) \{[\s\S]*container\.insertBefore\(button, container\.firstElementChild\)/);
+  assert.match(content, /function insertButtonForGemini\(button\) \{[\s\S]*container\.parentElement\.insertBefore\(button, container\)/);
+  assert.match(content, /function insertButtonForGrok\(button\) \{[\s\S]*queryBar\.insertBefore\(button, queryBar\.firstElementChild\)/);
 });
 test('all prompt actions insert for review and never trigger host submission', () => {
   assert.doesNotMatch(content, /insertAndSend|prompt-send-btn|sendImmediately/);
@@ -102,18 +100,14 @@ test('initial composer button injection waits until hydration is complete', () =
   assert.match(content, /window\.setTimeout\(\(\) => \{[\s\S]*buttonInjectionReady = true;[\s\S]*retryCreateButton\(\);[\s\S]*\}, 750\)/);
   assert.match(content, /scheduleButtonRecovery[\s\S]*if \(!buttonInjectionReady\) return/);
 });
-test('ChatGPT extension UI stays outside React-managed composer markup', () => {
-  assert.match(content, /function insertButtonForChatGPT\(button\) \{[\s\S]*insertComposerOverlayButton\(button/);
-  assert.match(content, /function insertComposerOverlayButton\(button, className\) \{[\s\S]*document\.body\.appendChild\(button\);[\s\S]*return true/);
-  assert.doesNotMatch(content, /composerForm\.insertBefore\(button/);
-  assert.doesNotMatch(content, /form\.insertBefore\(button/);
+test('2.0.6 composer placement keeps the new click-safety protections', () => {
+  assert.match(content, /button\.type = 'button'/);
+  assert.match(content, /button\.addEventListener\('pointerdown', event => \{[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\)/);
+  assert.match(content, /applyCenteredButtonStyle\(button/);
+  assert.doesNotMatch(content, /function positionComposerOverlayButton/);
+  assert.doesNotMatch(content, /insertComposerOverlayButton/);
   assert.match(content, /function scheduleInitialButtonCreation\(\) \{[\s\S]*ensurePromptPanelHost\(\);[\s\S]*retryCreateButton\(\)/);
   assert.doesNotMatch(content, /async function init\(\) \{\s*ensurePromptPanelHost\(\)/);
-});
-test('body-level quick buttons track the active composer instead of sitting at viewport bottom', () => {
-  assert.match(content, /function positionComposerOverlayButton\(button\) \{[\s\S]*findComposer\(\)[\s\S]*getBoundingClientRect\(\)/);
-  assert.match(content, /button\.style\.top = `\$\{Math\.max\(8, anchorRect\.top - buttonHeight - 8\)\}px`/);
-  assert.match(content, /scheduleButtonRecovery[\s\S]*positionComposerOverlayButton\(button\)/);
 });
 test('button and preload host recovery cover all matched platforms within one second', () => {
   assert.match(content, /setInterval\(scheduleButtonRecovery, 750\)/);
