@@ -3,10 +3,12 @@
 ## 繁體中文
 
 ### 簡短說明（132 字元內）
-支援 ChatGPT、Claude、Gemini、Grok 的本機提示詞管理工具，提供變數預設值、搜尋與安全的提示詞插入。
+跨平台 AI 提示詞管理工具，支援 ChatGPT、Claude、Gemini、Grok、變數預設值、搜尋與雙語介面。
 
 ### 詳細說明
-AI 提示詞+ 幫助你在 ChatGPT、Claude、Google Gemini 與 Grok 建立、整理及使用提示詞模板。所有提示詞與設定都保存在本機，沒有分析、遙測或後端帳號。
+AI 提示詞+ — 你的 AI 對話效率神器。
+
+支援 4 大主流 AI 平台：ChatGPT、Claude、Gemini、Grok。你可以建立自己的提示詞圖書館，快速搜尋、分類、置頂與插入常用模板。
 
 主要功能：
 - 建立、編輯、刪除、分類、搜尋及置頂提示詞
@@ -14,10 +16,19 @@ AI 提示詞+ 幫助你在 ChatGPT、Claude、Google Gemini 與 Grok 建立、�
 - 自動辨識既有 `[變數名稱]`
 - 支援 `[變數名稱|預設內容]`，使用時可沿用或修改預設值
 - 編輯框以顏色區分變數名稱與預設內容
-- 「插入提示詞」：保留草稿與附件，先檢查、補充或修改後再由使用者手動送出
+- 「插入提示詞」：保留目前草稿與附件，先檢查、補充或修改後，再由使用者手動送出
 - 不會自動按下 AI 平台的送出鍵，避免提示詞或附件尚未確認就送出
 - 右側大型面板，避免與 AI 網站輸入框衝突
 - 繁體中文與英文介面
+
+🎁 加入免費社群，領取 100+ 精選提示詞！
+
+AI 投資學院+ 免費社群提供涵蓋工作、學習、創作等場景的提示詞模板，持續更新中：
+👉 https://link.brain168.com/ai-invest
+
+無論你是 AI 新手還是進階使用者，AI 提示詞+ 都能幫助你更有效率地與 AI 對話。
+
+💡 由 AI 投資學院+ 團隊開發與維護。
 
 變數範例：
 `請為 [產品名稱] 撰寫一篇面向 [目標客群|新手使用者] 的介紹。`
@@ -36,15 +47,17 @@ AI 提示詞+ 幫助你在 ChatGPT、Claude、Google Gemini 與 Grok 建立、�
 - 只有按下「插入提示詞」時，選定內容才會寫入正在使用的 AI 平台輸入框；是否送出由使用者決定
 
 原始碼與支援：https://github.com/GsirGinRay/ai-prompts-plus
-隱私權政策：https://gsirginray.github.io/ai-prompts-plus/privacy.html
+隱私權政策：https://github.com/GsirGinRay/ai-prompts-plus#privacy-policy
 
 ## English
 
 ### Short description (132 characters max)
-Local prompt manager for ChatGPT, Claude, Gemini, and Grok with variables, defaults, search, and safe review-before-send insertion.
+Cross-platform prompt manager for ChatGPT, Claude, Gemini, and Grok with variables, search, quick insertion, and bilingual UI.
 
 ### Detailed description
-AI Prompts+ helps users create, organize, and use prompt templates on ChatGPT, Claude, Google Gemini, and Grok. Prompts and settings stay in local Chrome storage. There is no analytics, telemetry, backend account, or remote code.
+AI Prompts+ — your AI conversation productivity toolkit.
+
+Use one prompt library across ChatGPT, Claude, Google Gemini, and Grok. Create, organize, search, and quickly insert reusable templates without repeatedly rewriting the same instructions.
 
 Key features:
 - Create, edit, delete, categorize, search, and pin prompts
@@ -52,10 +65,19 @@ Key features:
 - Automatically recognize legacy `[variable]` templates
 - Optional defaults with `[variable|default content]`
 - Color-coded variable names and defaults in the editor
-- “Insert Prompt” keeps the current draft and attachments so users can review or add context before manually sending
+- “Insert Prompt” keeps the current draft and attachments so users can review, add context, or edit before manually sending
 - The extension never presses the AI platform send button automatically
 - Large right-side panel isolated from AI site composers
 - Traditional Chinese and English UI
+
+🎁 Join the free community and get 100+ curated prompts!
+
+The AI Investment Academy+ community shares prompt templates for work, learning, and creative projects, with new resources added over time:
+👉 https://link.brain168.com/ai-invest
+
+Whether you are new to AI or an advanced user, AI Prompts+ helps you have more effective conversations with AI.
+
+💡 Built and maintained by the AI Investment Academy+ team.
 
 Permissions:
 - `storage` stores prompts, settings, pins, and local usage counts on the device
@@ -63,7 +85,7 @@ Permissions:
 - No activeTab, browsing history, tabs, identity, analytics, telemetry, ads, or remote code
 
 Source and support: https://github.com/GsirGinRay/ai-prompts-plus
-Privacy policy: https://gsirginray.github.io/ai-prompts-plus/privacy.html
+Privacy policy: https://github.com/GsirGinRay/ai-prompts-plus#privacy-policy
 
 ## Privacy practices dashboard copy
 

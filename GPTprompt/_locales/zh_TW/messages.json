@@ -1,0 +1,8 @@
+{
+  "appName": {
+    "message": "AI 提示詞+"
+  },
+  "appDescription": {
+    "message": "跨平台 AI 提示詞管理工具，支援 ChatGPT、Claude、Gemini、Grok、變數預設值、搜尋與雙語介面。"
+  }
+}

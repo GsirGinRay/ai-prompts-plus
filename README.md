@@ -1,143 +1,136 @@
-# AI 提示詞+ (AI Prompts+)
+# AI 提示詞+ / AI Prompts+
 
-**AI投資學院+ 官方推薦工具** | 版本 2.0.7
+**AI 投資學院+ 官方推薦工具 / Recommended by AI Investment Academy+**
 
-這是一個功能強大的 Chrome 擴充功能，專為提升 AI 使用效率而設計。幫助您管理、組織並快速使用常用的提示詞模板。
+Version 2.0.7
 
-🚀 **全面支援四大主流 AI 平台：**
-- **ChatGPT** (chatgpt.com / openai.com)
-- **Claude** (claude.ai)
-- **Google Gemini** (gemini.google.com)
-- **Grok** (grok.com)
+[繁體中文](#繁體中文) · [English](#english) · [Privacy Policy](#privacy-policy)
 
----
+## 繁體中文
 
-## ✨ 主要功能
+AI 提示詞+ 是一款支援 ChatGPT、Claude、Google Gemini 與 Grok 的 Chrome 提示詞圖書館。你可以建立、分類、搜尋及置頂常用模板，使用變數與預設值快速客製內容，再將提示詞插入目前的 AI 對話框中檢查後手動送出。
 
-### 1. 跨平台快速插入
-在 ChatGPT、Claude、Gemini 或 Grok 的對話頁面，輸入框附近會自動出現「提示詞」浮動按鈕。點擊即可開啟面板，一鍵將模板填入對話框。
+### 主要功能
 
-### 2. 智慧變數替換
-支援動態變數功能。選取提示詞中的文字並點擊「設為變數」，即可設定變數名稱與選填的預設內容；既有的 `[變數名稱]` 格式也會自動辨識。
+- 在 ChatGPT、Claude、Gemini 與 Grok 共用一套提示詞圖書館
+- 建立、編輯、刪除、分類、搜尋及置頂提示詞
+- 相容既有的 [變數名稱] 語法
+- 支援 [變數名稱|預設內容]，使用時可沿用或修改預設值
+- 編輯框以顏色區分變數名稱與預設內容
+- 匯入與匯出 JSON 備份
+- 插入時保留目前草稿與附件
+- 不會自動按下 AI 平台送出鍵，由使用者檢查後手動送出
+- 提供繁體中文與英文介面
 
-### 3. 高效管理系統
-- **分類管理**：為提示詞設定分類，井然有序。
-- **置頂功能 (Pin)**：將最常用的提示詞置頂，置於列表最上方，存取更方便。
-- **快速搜尋**：支援關鍵字搜尋，或使用 `/` 開頭進行指令式搜尋。
-- **使用統計**：自動記錄每個提示詞的使用次數，常用的會自動排序在前。
+### 使用方式
 
-### 4. 資料安全與備份
-- **本地儲存**：所有資料僅儲存在您的瀏覽器本地端，保障隱私。
-- **匯入/匯出**：支援將所有提示詞匯出為 JSON 檔進行備份，或分享給團隊成員。
-- **多語言介面**：內建繁體中文與英文介面，可隨時切換。
+1. 點擊擴充功能圖示，建立一則提示詞。
+2. 選取需要替換的文字並點擊「設為變數」，或直接輸入 [名稱]、[名稱|預設內容]。
+3. 前往支援的 AI 平台，點擊輸入框附近的「提示詞」按鈕。
+4. 選擇模板並填寫變數。
+5. 點擊「插入提示詞」，檢查、修改或加入附件後，再自行送出。
 
----
+變數範例：
 
-## 📥 安裝指南
+    請為 [產品名稱] 撰寫一篇面向 [目標客群|新手使用者] 的介紹。
 
-由於本擴充功能尚未上架 Chrome 商店，請依照以下步驟進行安裝（過程約 1 分鐘）：
+### 開發版本安裝
 
-### 第一步：準備檔案
-1. 下載此專案的完整程式碼（或是 `git clone` 到本地）。
-2. 確保您擁有 `GPTprompt` 資料夾（內含 `manifest.json` 檔案）。
+1. 下載或 clone 此專案。
+2. 前往 chrome://extensions/。
+3. 開啟「開發人員模式」。
+4. 點擊「載入未封裝項目」，選擇 GPTprompt/ 資料夾。
 
-### 第二步：載入擴充功能
-1. 開啟 Google Chrome 瀏覽器。
-2. 在網址列輸入 `chrome://extensions/` 並按下 Enter。
-3. 在頁面右上角，開啟 **「開發人員模式」** (Developer mode) 開關。
-4. 點擊左上角的 **「載入未封裝項目」** (Load unpacked) 按鈕。
-5. 選擇本專案中的 `GPTprompt` 資料夾。
+### 免費提示詞社群
 
-### 第三步：開始使用
-安裝完成後，您會在瀏覽器擴充功能列看到圖示。建議將其 **「固定」 (Pin)** 在工具列上以便隨時使用。
+AI 投資學院+ 社群提供涵蓋工作、學習與創作等場景的 100+ 精選提示詞，並持續更新：
 
----
+[加入 AI 投資學院+](https://link.brain168.com/ai-invest)
 
-## 📖 使用教學
+## English
 
-### 1. 新增您的第一個提示詞
-1. 點擊瀏覽器右上角的擴充功能圖示。
-2. 點擊 **「+ 新增」** 按鈕。
-3. 填寫名稱（例如：「SEO 文章撰寫」）。
-4. 在內容中輸入提示詞模板，選取需要動態替換的文字，點擊 **「＋ 設為變數」**，確認變數名稱並視需要填入預設內容。
-   
-   **範例：**
-   ```text
-   請幫我以 [角色] 的角度，寫一篇關於 [主題] 的文章。
-   文章的目標受眾是 [受眾]，語氣要 [語氣]。
-   ```
-5. 點擊保存。
+AI Prompts+ is a Chrome prompt library for ChatGPT, Claude, Google Gemini, and Grok. Create, categorize, search, and pin reusable templates; customize them with variables and optional defaults; then insert prompts into the active AI composer for review before manually sending.
 
-### 2. 在 AI 聊天中使用
-1. 前往 ChatGPT、Claude、Gemini 或 Grok 網站。
-2. 您會在輸入框附近看到一個 **「提示詞」** 的快速訪問按鈕。
-3. 點擊按鈕開啟面板，點擊您剛建立的提示詞。
-4. 若提示詞包含變數，會跳出視窗讓您填寫。
-5. 按下 **「插入提示詞」** 後可在對話框檢查、修改或加入附件，確認無誤再由你手動送出。
+### Key features
 
-### 3. 進階技巧
-- **置頂常用項目**：在列表中點擊圖釘圖示 📌，該提示詞將永遠顯示在最上方。
-- **搜尋**：在面板上方的搜尋框輸入關鍵字。支援以 `/` 開頭直接搜尋名稱。
-- **備份資料**：點擊管理面板右上角的下載圖示，將所有設定匯出備份。
+- Use one prompt library across ChatGPT, Claude, Gemini, and Grok
+- Create, edit, delete, categorize, search, and pin prompts
+- Recognize existing [variable] syntax
+- Support optional defaults with [variable|default content]
+- Color-code variable names and default content in the editor
+- Import and export JSON backups
+- Preserve the current draft and attachments when inserting
+- Never press the AI platform send button automatically
+- Provide Traditional Chinese and English interfaces
 
----
+### How to use
 
-## 🎁 獲取更多優質提示詞
+1. Click the extension icon and create a prompt.
+2. Select replaceable text and choose “Set as Variable,” or type [name] or [name|default content] directly.
+3. Open a supported AI platform and click the “Prompts” button near its composer.
+4. Choose a template and complete any variables.
+5. Click “Insert Prompt,” review or edit it, add attachments if needed, and send it manually.
 
-想要存取 **100+ 進階提示詞模板** 並學習更多 AI 應用技巧？
+Variable example:
 
-加入 **[AI投資學院+](https://www.skool.com/ai-investment-academy-plus)** 即可獲得：
-- 📚 **100+ 進階提示詞庫**（定期更新）
-- 🎯 **各產業專用模板**（行銷、銷售、管理等）
-- 🔥 **最新 AI 應用技巧**
-- 👥 **社群成員互助交流**
+    Write an introduction for [product name] aimed at [target audience|new users].
 
-**[→ 立即加入 AI投資學院+](https://www.skool.com/ai-investment-academy-plus)**
+### Install the development version
 
----
+1. Download or clone this repository.
+2. Open chrome://extensions/.
+3. Enable Developer mode.
+4. Select “Load unpacked” and choose the GPTprompt/ folder.
 
-## 🔒 隱私權政策與授權
+### Free prompt community
 
-- **隱私權**：本擴充功能 **不會** 收集、傳輸或分享您的任何個人資料或對話內容。所有資料皆儲存於您的裝置本地端 (Chrome Local Storage)。
-- **授權**：MIT License. Open source for educational and personal use.
+The AI Investment Academy+ community shares 100+ curated prompts for work, learning, and creative projects, with new resources added over time:
 
----
+[Join AI Investment Academy+](https://link.brain168.com/ai-invest)
 
-## 📋 更新日誌
+## Privacy Policy
 
-### v2.0.7 (2026-08-10)
-- 修復 Grok 變數輸入焦點被主對話框搶走的問題
-- 修復 ChatGPT 貼上內容同時進入變數欄與對話框的問題
-- 新增 `[名稱|預設值]` 可選預設變數語法
-- 提示詞面板改為獨立浮動層，避免 AI 網站攔截輸入事件
-- 所有平台統一為「插入提示詞」後由使用者檢查並手動送出
+Last updated: August 10, 2026 / 最後更新：2026 年 8 月 10 日
 
-### v2.0.5 (2026-01-20)
-- 移除未使用的 `activeTab` 權限（符合 Chrome Web Store 審核要求）
+### 繁體中文
 
-### v2.0.4 (2026-01-10)
-- 新增 AI投資學院+ 社群推廣橫幅（首次安裝顯示，每週提醒一次）
-- 彈出視窗改為「複製提示詞」功能（可在任何頁面使用）
+AI 提示詞+ 的單一用途，是讓使用者在 ChatGPT、Claude、Google Gemini 與 Grok 建立、管理及插入提示詞模板，供使用者檢查後手動送出。
 
-### v2.0.3 (2026-01-10)
-- 修復 Claude 平台按鈕問題，按鈕寬度與輸入框同寬
-- 修復 Grok 平台提示詞送出和變數輸入問題
+- **本機資料**：提示詞名稱、分類、內容、變數與預設值、介面設定、建立與更新時間、置頂狀態、使用次數及最近使用時間，皆保存在使用者裝置的 chrome.storage.local。開發者沒有接收這些資料的後端。
+- **AI 平台**：只有使用者明確點擊「插入提示詞」時，所選模板與填入的變數內容才會寫入目前 AI 平台的輸入框。擴充功能不會自動按下送出鍵；是否送出由使用者決定。擴充功能不讀取或上傳既有對話與附件，也不會把提示詞或目前對話網址傳給開發者。
+- **權限**：storage 用於保存本機提示詞與設定；ChatGPT、Claude、Gemini、Grok 的網站權限僅用於顯示提示詞介面及執行使用者要求的插入操作。擴充功能不要求瀏覽紀錄、分頁或身分驗證等非必要權限，也不執行遠端程式碼。
+- **第三方與 Limited Use**：擴充功能沒有分析、遙測、廣告 SDK、後端 API 或資料經紀服務。資料只用於提供或改善上述單一功能，不出售或移轉給廣告平台、資料經紀商或資訊轉售者，也不用於個人化廣告、信用評估或貸款。開發者或其他人員不會閱讀使用者的提示詞或對話。
+- **使用者控制**：使用者可隨時編輯、刪除、匯入或匯出提示詞。移除擴充功能時，Chrome 會依其機制移除本機資料；建議移除前先匯出需要保留的內容。
 
-### v2.0.2 (2025-01-08)
-- 新增 Claude 平台支援
-- 新增 Grok 平台支援
-- 變數輸入框支援 Enter 鍵直接執行
+問題可透過 [GitHub Issues](https://github.com/GsirGinRay/ai-prompts-plus/issues) 聯絡。
 
-### v2.0.0 (2024-11-26)
-- 新增直接刪除功能
-- 新增置頂功能
-- 智能排序（置頂優先，使用次數排序）
+### English
 
-### v1.0.0 (2024-11-24)
-- 首次發布
-- 支援 ChatGPT 和 Gemini
-- 提示詞管理、變數替換、匯入/匯出功能
+AI Prompts+ has one purpose: helping users create, manage, and insert prompt templates on ChatGPT, Claude, Google Gemini, and Grok for review before manual sending.
 
----
+- **Local data**: Prompt names, categories, content, variables and defaults, interface preferences, timestamps, pin state, local usage counts, and last-used times are stored on the user's device with chrome.storage.local. The developer operates no backend that receives this data.
+- **AI platforms**: Only when the user explicitly selects “Insert Prompt” does the chosen template and supplied variable content enter the active AI site's composer. The extension never presses the send button automatically; the user decides whether to send it. The extension does not read or upload existing conversations or attachments and does not send prompts or the current conversation URL to the developer.
+- **Permissions**: storage saves local prompts and settings. Host access to ChatGPT, Claude, Gemini, and Grok is used only to display the prompt interface and perform user-requested insertion. The extension does not request browsing history, tabs, identity, or other unnecessary permissions and executes no remote code.
+- **Third parties and Limited Use**: There is no analytics, telemetry, advertising SDK, backend API, or data broker. Information is used only to provide or improve the disclosed single purpose; it is not sold or transferred to advertising platforms, data brokers, or information resellers; it is not used for personalized advertising, creditworthiness, or lending; and humans are not allowed to read users' prompts or conversations.
+- **User control**: Users can edit, delete, import, or export prompts at any time. Chrome removes extension-local data according to its uninstall behavior; export anything that should be retained before uninstalling.
 
-**Made with ❤️ for better AI experience**
+Questions may be submitted through [GitHub Issues](https://github.com/GsirGinRay/ai-prompts-plus/issues).
+
+## Changelog / 更新日誌
+
+### v2.0.7 — 2026-08-10
+
+- Added localized Chrome Web Store metadata for Traditional Chinese and English / 新增 Chrome Web Store 繁體中文與英文多語系資訊
+- Added optional variable defaults and editor color highlighting / 新增變數預設值語法與編輯器顏色提示
+- Fixed focus and insertion behavior on all supported AI platforms / 修復四個 AI 平台的欄位焦點與插入行為
+- Preserved drafts and attachments during insertion / 插入提示詞時保留現有草稿與附件
+- Standardized manual sending on every platform / 所有平台統一由使用者檢查後手動送出
+- Improved panel isolation, safety, import validation, and performance / 強化面板隔離、安全性、匯入驗證與效能
+
+See [CHANGELOG.md](CHANGELOG.md) for previous releases.
+
+## License / 授權
+
+[MIT License](LICENSE)
+
+Made with ❤️ for better AI conversations.
