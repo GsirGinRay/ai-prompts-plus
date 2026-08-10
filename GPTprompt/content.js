@@ -603,9 +603,18 @@ function insertButtonForChatGPT(button) {
 }
 
 function insertButtonForGemini(button) {
+  const composer = findComposer();
+  const inputArea = composer?.closest('input-area-v2') || document.querySelector('input-area-v2');
+  if (inputArea?.parentElement) {
+    applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    const width = inputArea.getBoundingClientRect().width;
+    if (width > 0) button.style.width = `${width}px`;
+    inputArea.parentElement.insertBefore(button, inputArea);
+    return true;
+  }
+
   const container = findInputContainer();
   if (!container?.parentElement) return false;
-
   applyCenteredButtonStyle(button, { marginBottom: '4px' });
   const width = container.getBoundingClientRect().width;
   if (width > 0) button.style.width = `${width}px`;

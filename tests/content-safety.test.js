@@ -30,7 +30,7 @@ test('platform selector lookup fails safely and restores the 2.0.6 composer plac
   assert.match(content, /PLATFORM_SELECTORS\[platform\]\?\.inputContainer \|\| \[\]/);
   assert.match(content, /function insertButtonForChatGPT\(button\) \{[\s\S]*composerForm\.insertBefore\(button, composerForm\.firstElementChild\)/);
   assert.match(content, /function insertButtonForClaude\(button\) \{[\s\S]*container\.insertBefore\(button, container\.firstElementChild\)/);
-  assert.match(content, /function insertButtonForGemini\(button\) \{[\s\S]*container\.parentElement\.insertBefore\(button, container\)/);
+  assert.match(content, /function insertButtonForGemini\(button\) \{[\s\S]*inputArea\.parentElement\.insertBefore\(button, inputArea\)/);
   assert.match(content, /function insertButtonForGrok\(button\) \{[\s\S]*queryBar\.insertBefore\(button, queryBar\.firstElementChild\)/);
 });
 test('all prompt actions insert for review and never trigger host submission', () => {
