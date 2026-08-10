@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.7] - 2026-08-10
+
+### Added
+- 支援既有 `[名稱]` 與含預設內容的 `[名稱|預設值]` 變數格式
+- 提示詞編輯器以不同顏色顯示變數名稱與預設內容，並支援中文輸入法
+- 四平台統一為「插入提示詞」模式，內容插入後由使用者檢查並手動送出
+- 匯入檔案採 5 MiB／1,000 筆／欄位長度／合併容量的原子驗證
+
+### Changed
+- 四平台統一使用 480px 右側面板，採 closed Shadow DOM 隔離本機提示詞資料
+- 插入會取代選取範圍或從游標位置插入，保留既有草稿與附件
+- 提示詞 CRUD 統一經 background service worker 的序列化佇列處理
+- 搜尋加入 debounce、每批 100 筆渲染與事件委派
+- 面板樣式與提示詞資料在頁面初始化時預載，SPA 重建後於一秒內恢復
+
+### Fixed
+- 修復快速按鈕意外觸發網站表單送出的問題
+- 修復 Grok 變數欄位點擊後焦點跳回對話框的問題
+- 修復 closed Shadow DOM 搜尋事件 retargeting 導致 `startsWith` 例外
+- 修復大量未閉合中括號造成解析卡頓，並避免改寫合法矩陣括號
+- 移除自動點擊送出與 synthetic Enter，避免誤送、假成功及草稿遺失
+- 修復編輯提示詞時遺失建立時間、使用次數、置頂及匯入資訊
+- 修復多分頁同時寫入造成提示詞互相覆蓋
+- 修復匯入內容注入、面板事件穿透、計時器重複及 Gemini 按鈕消失
+
+### Security and privacy
+- 使用者內容以 DOM property／`textContent` 建立，避免 attribute 注入
+- 推廣連結加入 opener 與 referrer 防護，不傳送提示詞或對話網址
+- 保持只有 `storage` 與既有四平台 host permissions，無遙測、後端或遠端程式碼
+
+---
 ## [2.0.5] - 2026-01-20
 
 ### Fixed

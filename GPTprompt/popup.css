@@ -225,11 +225,25 @@ body {
 
 .variable-tag {
   background: #eff6ff;
-  color: #2563eb;
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 11px;
   font-weight: 500;
+}
+
+.variable-token-bracket,
+.variable-token-separator {
+  color: #64748b;
+}
+
+.variable-token-name {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.variable-token-default {
+  color: #b45309;
+  font-weight: 700;
 }
 
 /* 空狀態 */
@@ -352,6 +366,54 @@ body {
   min-height: 120px;
 }
 
+.variable-highlight-editor {
+  position: relative;
+}
+
+.variable-highlight-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 14px;
+  overflow: hidden;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.variable-highlight-layer .variable-token-name,
+.variable-highlight-layer .variable-token-default {
+  font-weight: inherit;
+}
+
+.variable-highlight-editor #promptContent {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text-primary);
+  -webkit-text-fill-color: transparent;
+  line-height: 1.5;
+}
+
+.variable-highlight-editor #promptContent::placeholder {
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+.variable-highlight-editor #promptContent::selection {
+  background: rgba(37, 99, 235, 0.2);
+}
+
 .hint-text {
   margin-top: 8px;
   font-size: 12px;
@@ -379,6 +441,82 @@ body {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
+}
+
+.variable-creator {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.variable-creator[hidden] {
+  display: none;
+}
+
+.variable-creator input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font: inherit;
+  outline: none;
+}
+
+.variable-creator label {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+
+.variable-creator input:focus {
+  border-color: var(--primary-color);
+}
+
+.variable-creator label[for="variableName"],
+#variableName {
+  color: #1d4ed8;
+}
+
+#variableName {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.variable-creator label[for="variableDefault"],
+#variableDefault {
+  color: #b45309;
+}
+
+#variableDefault {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.variable-preview {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 9px;
+  background: #ffffff;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+}
+
+.variable-preview[hidden] {
+  display: none;
+}
+
+.variable-creator-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.variable-creator-actions button {
+  padding: 7px 12px;
 }
 
 .modal-footer {

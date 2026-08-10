@@ -1,184 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - ChatGPT Prompt Manager</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background: #f5f5f5;
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #10a37f;
-            margin-bottom: 10px;
-            font-size: 32px;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-
-        h2 {
-            color: #333;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            font-size: 24px;
-            border-bottom: 2px solid #10a37f;
-            padding-bottom: 8px;
-        }
-
-        p {
-            margin-bottom: 15px;
-            color: #555;
-        }
-
-        ul {
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-
-        li {
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        strong {
-            color: #333;
-        }
-
-        .update-date {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .highlight {
-            background: #f0fdf4;
-            padding: 20px;
-            border-left: 4px solid #10a37f;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e5e5;
-            text-align: center;
-            color: #888;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>AI 提示詞+｜隱私權政策 / Privacy Policy</title>
+  <style>
+    *{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.7;color:#273244;max-width:920px;margin:0 auto;padding:32px 18px;background:#f5f7fb}.container{background:#fff;padding:clamp(24px,5vw,48px);border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.08)}h1{margin:0;color:#111827}h2{margin-top:32px;padding-bottom:8px;border-bottom:2px solid #2563eb;color:#1f2937}h3{margin-top:24px;color:#1d4ed8}.summary{margin:24px 0;padding:18px 20px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:8px}.meta{color:#64748b}li{margin:7px 0}code{background:#f1f5f9;padding:2px 5px;border-radius:4px}a{color:#1d4ed8}.footer{margin-top:36px;padding-top:18px;border-top:1px solid #e2e8f0;color:#64748b}
+  </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Privacy Policy</h1>
-        <p class="subtitle">ChatGPT Prompt Manager Chrome Extension</p>
-        <p class="update-date">Last Updated: November 23, 2024</p>
+<body><main class="container">
+  <h1>AI 提示詞+ 隱私權政策</h1>
+  <p class="meta">AI Prompts+ Privacy Policy｜最後更新 / Last updated: 2026-08-10</p>
+  <div class="summary"><strong>摘要：</strong>提示詞、設定與本機使用次數保存在 Chrome 的本機儲存空間。我們不提供後端、不使用分析或遙測，也不出售資料。只有當你主動選擇「插入提示詞」時，對應內容才會寫入你正在使用的 AI 平台輸入框；擴充功能不會自動送出。</div>
 
-        <div class="highlight">
-            <p><strong>Summary:</strong> This extension does not collect any personal data. All your prompts and settings are stored locally on your device.</p>
-        </div>
+  <section lang="zh-Hant">
+    <h2>繁體中文</h2>
+    <h3>1. 單一用途</h3>
+    <p>AI 提示詞+ 的單一用途是讓使用者在 ChatGPT、Claude、Google Gemini 與 Grok 建立、管理及插入提示詞模板，供使用者檢查後手動送出。</p>
 
-        <h2>1. Information We Do NOT Collect</h2>
-        <p>ChatGPT Prompt Manager does not collect, transmit, or share any user data, including but not limited to:</p>
-        <ul>
-            <li>Personal information (name, email, address, etc.)</li>
-            <li>Browsing history</li>
-            <li>User activity or behavior</li>
-            <li>Location data</li>
-            <li>Device information</li>
-            <li>Analytics or usage statistics</li>
-        </ul>
+    <h3>2. 本機處理與儲存的資料</h3>
+    <ul>
+      <li><strong>使用者建立的內容：</strong>提示詞名稱、分類、提示詞內容、變數名稱與預設值。</li>
+      <li><strong>設定：</strong>介面語言及是否顯示選擇性社群資源提示。</li>
+      <li><strong>本機功能資料：</strong>建立／更新時間、置頂狀態、使用次數與最近使用時間。</li>
+    </ul>
+    <p>上述資料使用 <code>chrome.storage.local</code> 保存在使用者裝置，不會同步到開發者伺服器。匯入與匯出由使用者主動操作，檔案只在使用者選擇的位置與擴充功能內處理。</p>
 
-        <h2>2. Local Data Storage</h2>
-        <p>All data created by the extension is stored locally on your device using Chrome's local storage API (<code>chrome.storage.local</code>):</p>
-        <ul>
-            <li><strong>Prompt Templates:</strong> Your custom prompt templates and content</li>
-            <li><strong>Settings:</strong> Your preferences (language, categories, etc.)</li>
-            <li><strong>Usage Statistics:</strong> Local count of how many times you've used each prompt (stored only on your device)</li>
-        </ul>
-        <p><strong>Important:</strong> This data never leaves your device and is not transmitted to any external servers.</p>
+    <h3>3. 與 AI 平台的資料傳送</h3>
+    <p>擴充功能在四個支援網站顯示使用者介面。只有使用者明確點擊「插入提示詞」時，選定模板及填入的變數內容才會被寫入該網站的對話輸入框。擴充功能不會自動按下送出鍵；內容是否送出由使用者檢查後自行決定，並受各 AI 平台自身的條款與隱私政策約束。</p>
+    <p>擴充功能不讀取或上傳既有對話內容、不蒐集附件，也不會把目前頁面網址或提示詞傳給開發者。</p>
 
-        <h2>3. Permissions Explanation</h2>
-        <p>The extension requires the following permissions:</p>
-        <ul>
-            <li><strong>storage:</strong> To save your prompts and settings locally on your device</li>
-            <li><strong>activeTab:</strong> To insert prompts into the ChatGPT input field when you click on them</li>
-            <li><strong>host_permissions (chat.openai.com, chatgpt.com):</strong> To detect ChatGPT pages and enable the floating prompt button</li>
-        </ul>
-        <p>These permissions are used solely for the extension's functionality and not for data collection.</p>
+    <h3>4. 權限用途</h3>
+    <ul>
+      <li><strong>storage：</strong>在本機保存提示詞、設定與功能資料。</li>
+      <li><strong>chat.openai.com / chatgpt.com：</strong>在 ChatGPT 顯示面板，並依使用者操作插入提示詞。</li>
+      <li><strong>claude.ai：</strong>在 Claude 顯示面板，並依使用者操作插入提示詞。</li>
+      <li><strong>gemini.google.com：</strong>在 Gemini 顯示面板，並依使用者操作插入提示詞。</li>
+      <li><strong>grok.com：</strong>在 Grok 顯示面板，並依使用者操作插入提示詞。</li>
+    </ul>
+    <p>擴充功能不要求 <code>activeTab</code>、瀏覽紀錄、分頁、身分驗證或其他非必要權限，也不執行遠端程式碼。</p>
 
-        <h2>4. Third-Party Services</h2>
-        <p>This extension does not use any third-party services, including:</p>
-        <ul>
-            <li>No analytics tools (Google Analytics, etc.)</li>
-            <li>No tracking or telemetry</li>
-            <li>No external APIs or servers</li>
-            <li>No advertisements</li>
-        </ul>
+    <h3>5. 第三方服務與社群資源</h3>
+    <p>擴充功能沒有分析、遙測、廣告 SDK、後端 API 或資料經紀服務。介面可能顯示由 AI 投資學院+ 提供的選擇性社群資源連結；只有使用者主動點擊才會開啟，並使用 <code>noopener noreferrer</code>、<code>no-referrer</code>，不附帶提示詞或目前對話網址。</p>
 
-        <h2>5. Data Security</h2>
-        <p>Since all data is stored locally on your device:</p>
-        <ul>
-            <li>Your data is as secure as your device</li>
-            <li>No data is transmitted over the network</li>
-            <li>No risk of server breaches or unauthorized access</li>
-            <li>The extension follows Chrome's security best practices</li>
-        </ul>
+    <h3>6. Limited Use 承諾</h3>
+    <p>本擴充功能對使用者資料的使用遵守 Chrome Web Store User Data Policy（包括 Limited Use 要求）。資料僅用於提供或改善上述單一使用者功能；不出售或移轉給廣告平台、資料經紀商或其他資訊轉售者；不用於個人化廣告、信用評估或貸款；開發者或其他人員不會閱讀使用者的提示詞或對話資料。</p>
 
-        <h2>6. Your Control</h2>
-        <p>You have complete control over your data:</p>
-        <ul>
-            <li><strong>Export:</strong> Export all your prompts as JSON files at any time</li>
-            <li><strong>Import:</strong> Import prompts from JSON files</li>
-            <li><strong>Delete:</strong> Delete individual prompts or all data</li>
-            <li><strong>Uninstall:</strong> Uninstalling the extension will remove all locally stored data</li>
-        </ul>
+    <h3>7. 使用者控制與安全</h3>
+    <ul>
+      <li>可隨時編輯、刪除、匯出或匯入提示詞。</li>
+      <li>移除擴充功能會依 Chrome 的機制移除其本機資料；建議移除前先匯出需要保留的內容。</li>
+      <li>資料安全也取決於裝置、Chrome 使用者設定檔及所使用 AI 平台的安全性。</li>
+    </ul>
 
-        <h2>7. Open Source</h2>
-        <p>This extension is open source. You can review the complete source code to verify our privacy practices at:</p>
-        <p><a href="https://github.com/GsirGinRay/ai-prompts-plus" target="_blank">https://github.com/GsirGinRay/ai-prompts-plus</a></p>
+    <h3>8. 政策更新與聯絡</h3>
+    <p>政策變更時會更新本頁日期；重大變更會透過商店資訊或擴充功能版本說明告知。問題可至 <a href="https://github.com/GsirGinRay/ai-prompts-plus/issues" rel="noopener noreferrer" referrerpolicy="no-referrer">GitHub Issues</a> 聯絡。</p>
+  </section>
 
-        <h2>8. Changes to This Policy</h2>
-        <p>If we make any changes to this privacy policy, we will update the "Last Updated" date at the top of this page. We will also notify users through the extension if there are significant changes.</p>
+  <section lang="en">
+    <h2>English</h2>
+    <h3>1. Single purpose</h3>
+    <p>AI Prompts+ lets users create, manage, and insert prompt templates on ChatGPT, Claude, Google Gemini, and Grok for review before manual sending.</p>
 
-        <h2>9. Contact</h2>
-        <p>If you have any questions about this privacy policy, please contact us through:</p>
-        <ul>
-            <li>GitHub Issues: <a href="https://github.com/GsirGinRay/ai-prompts-plus/issues" target="_blank">Report an Issue</a></li>
-        </ul>
+    <h3>2. Data processed and stored locally</h3>
+    <p>Prompt names, categories, content, variable names/defaults, language and promotion preferences, timestamps, pin state, local usage count, and last-used time are stored on the user's device with <code>chrome.storage.local</code>. The developer operates no backend for this data. Import and export happen only when initiated by the user.</p>
 
-        <div class="highlight">
-            <p><strong>Bottom Line:</strong> We respect your privacy. This extension is designed to work entirely on your device without collecting or transmitting any data.</p>
-        </div>
+    <h3>3. Data sent to AI platforms</h3>
+    <p>Only when the user selects “Insert Prompt” does the chosen prompt and supplied variable content enter the active AI site's composer. The extension never presses the platform send button automatically; the user reviews and manually sends the content. The platform's own terms and privacy policy apply. The extension does not upload existing conversations or attachments and does not send prompts or the current conversation URL to the developer.</p>
 
-        <div class="footer">
-            <p>ChatGPT Prompt Manager &copy; 2024</p>
-            <p>Made with ❤️ for better ChatGPT experience</p>
-        </div>
-    </div>
-</body>
-</html>
+    <h3>4. Permissions</h3>
+    <p><strong>storage</strong> saves local extension data. Host access to <strong>chat.openai.com/chatgpt.com, claude.ai, gemini.google.com, and grok.com</strong> is used only to display the user-facing prompt interface and perform user-requested insertion. The extension does not request activeTab, history, tabs, identity, or other unnecessary permissions and executes no remote code.</p>
+
+    <h3>5. Third parties and optional community link</h3>
+    <p>There is no analytics, telemetry, advertising SDK, backend API, or data broker. An optional AI Investment Academy+ resource link opens only after a user click and uses opener/referrer protections; no prompt or conversation URL is attached.</p>
+
+    <h3>6. Limited Use</h3>
+    <p>Use of information complies with the Chrome Web Store User Data Policy, including the Limited Use requirements. Data is used only to provide or improve the disclosed single purpose; it is not sold or transferred to advertising platforms, data brokers, or information resellers; it is not used for personalized advertising, creditworthiness, or lending; and humans are not allowed to read users' prompts or conversations.</p>
+
+    <h3>7. User control and contact</h3>
+    <p>Users can edit, delete, import, or export prompts at any time. Before uninstalling, export anything that should be retained. Questions may be submitted through <a href="https://github.com/GsirGinRay/ai-prompts-plus/issues" rel="noopener noreferrer" referrerpolicy="no-referrer">GitHub Issues</a>.</p>
+  </section>
+
+  <p class="footer">AI 提示詞+ / AI Prompts+ © 2026</p>
+</main></body></html>

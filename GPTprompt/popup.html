@@ -80,19 +80,26 @@
         </div>
         <div class="form-group">
           <label for="promptContent"><span data-i18n="promptContent">提示詞內容</span> <span data-i18n="required">*</span></label>
-          <textarea id="promptContent" rows="8" data-i18n-placeholder="promptContentPlaceholder" placeholder="輸入提示詞內容，使用 [變數名稱] 格式標記變數&#10;例如：請幫我撰寫關於 [主題] 的文章..." required></textarea>
-          <div class="hint-text" data-i18n="variableHint">
-            💡 使用 [變數名稱] 來標記可替換的內容
+          <div class="variable-highlight-editor">
+            <pre id="promptContentHighlight" class="variable-highlight-layer" aria-hidden="true"></pre>
+            <textarea id="promptContent" rows="8" data-i18n-placeholder="promptContentPlaceholder" placeholder="輸入提示詞內容..." required></textarea>
           </div>
-        </div>
-        <div class="form-group">
-          <label data-i18n="quickInsertVars">快速插入變數：</label>
+          <div class="hint-text" data-i18n="variableHint">
+            選取內容後按「設為變數」；既有的 [變數名稱] 也會自動辨識。
+          </div>
           <div class="variable-buttons">
-            <button class="var-btn" data-var-key="varTopic" data-i18n="varTopic">主題</button>
-            <button class="var-btn" data-var-key="varKeyword" data-i18n="varKeyword">關鍵字</button>
-            <button class="var-btn" data-var-key="varAudience" data-i18n="varAudience">受眾</button>
-            <button class="var-btn" data-var-key="varWordCount" data-i18n="varWordCount">字數</button>
-            <button class="var-btn" data-var-key="varTone" data-i18n="varTone">語氣風格</button>
+            <button type="button" id="markVariableBtn" class="var-btn" data-i18n="markAsVariable">＋ 設為變數</button>
+          </div>
+          <div id="variableCreator" class="variable-creator" hidden>
+            <label for="variableName" data-i18n="variableNameLabel">變數名稱</label>
+            <input type="text" id="variableName" data-i18n-placeholder="variableNamePlaceholder" placeholder="變數名稱，例如：主題" />
+            <label for="variableDefault" data-i18n="variableDefaultLabel">預設內容（選填）</label>
+            <input type="text" id="variableDefault" data-i18n-placeholder="variableDefaultPlaceholder" placeholder="預設內容（選填）" />
+            <div id="variablePreview" class="variable-preview" hidden aria-live="polite"></div>
+            <div class="variable-creator-actions">
+              <button type="button" id="cancelVariableCreation" class="btn-secondary" data-i18n="cancel">取消</button>
+              <button type="button" id="confirmVariableCreation" class="btn-primary" data-i18n="insertVariable">加入變數</button>
+            </div>
           </div>
         </div>
       </div>
@@ -125,6 +132,7 @@
   <!-- 隱藏的文件輸入 -->
   <input type="file" id="fileInput" accept=".json" style="display: none;" />
 
+  <script src="variable-utils.js"></script>
   <script src="storage.js"></script>
   <script src="i18n.js"></script>
   <script src="default-prompts.js"></script>

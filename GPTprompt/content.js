@@ -7,9 +7,21 @@
 let promptsData = [];
 let currentPrompt = null;
 let promptPanel = null;
+let promptPanelHost = null;
+let promptPanelRoot = null;
+let buttonInjectionReady = false;
+let panelOpenPromise = null;
+let savedComposerSelection = null;
+let activePromptAction = false;
+let visiblePromptCount = 100;
+let currentViewPrompts = [];
+let searchDebounceTimer = null;
+let promptsLoadPromise = null;
+const panelCleanupTasks = new Set();
 let promptBackdrop = null;
 let currentLang = 'zh-TW';
 let currentPlatform = null; // 'chatgpt' 或 'gemini'
+
 
 // 平台配置
 const PLATFORMS = {
@@ -23,29 +35,16 @@ const PLATFORMS = {
 const PLATFORM_SELECTORS = {
   [PLATFORMS.CHATGPT]: {
     textarea: [
-      // 新版 ChatGPT：ProseMirror contenteditable div
       'div#prompt-textarea.ProseMirror[contenteditable="true"]',
       '#prompt-textarea[contenteditable="true"]',
       'div.ProseMirror[contenteditable="true"]',
-      // 舊版 ChatGPT：textarea
       '#prompt-textarea',
       'textarea[data-id="root"]',
       'textarea[placeholder*="Message"]',
       'div[contenteditable="true"]',
       'textarea'
     ],
-    sendButton: [
-      'button[data-testid="send-button"]',
-      'button[data-testid="fruitjuice-send-button"]',
-      'button[aria-label="Send prompt"]',
-      'button[aria-label="Send"]',
-      'button[aria-label*="Send"]',
-      'button[aria-label*="送出"]',
-      'form[data-type="unified-composer"] button[type="button"]:last-of-type',
-      'form button[type="submit"]'
-    ],
     inputContainer: [
-      // 新版 ChatGPT：輸入框外層容器
       'div.composer-parent',
       'form.w-full[type="button"]',
       '#composer-background',
@@ -58,12 +57,6 @@ const PLATFORM_SELECTORS = {
       'div[contenteditable="true"][role="textbox"]',
       'div.ql-editor.textarea[contenteditable="true"]',
       'rich-textarea div[contenteditable="true"]'
-    ],
-    sendButton: [
-      'button.send-button',
-      'button[aria-label*="傳送"]',
-      'button[aria-label*="Send"]',
-      'button.submit'
     ]
   },
   [PLATFORMS.CLAUDE]: {
@@ -73,14 +66,7 @@ const PLATFORM_SELECTORS = {
       '[data-testid="chat-input"]',
       'div.ProseMirror[contenteditable="true"]'
     ],
-    sendButton: [
-      'button[aria-label="Send message"]',
-      'button.Button_claude__c_hZy[aria-label="Send message"]',
-      'button[data-testid="send-button"]',
-      '.Button_claude__c_hZy'
-    ],
     inputContainer: [
-      // 新版 Claude：輸入框容器（不依賴 mx-2，因為桌面端是 mx-0）
       'div.flex.flex-col.bg-bg-000',
       '.top-5.z-10.mx-auto.w-full.max-w-2xl',
       '.chat-input-grid-container'
@@ -88,17 +74,11 @@ const PLATFORM_SELECTORS = {
   },
   [PLATFORMS.GROK]: {
     textarea: [
-      // Grok 使用 contenteditable div，不是 textarea
+      'div[role="textbox"][aria-label="Ask Grok anything"][contenteditable="true"]',
       'div[contenteditable="true"].tiptap.ProseMirror',
       '.tiptap.ProseMirror[contenteditable="true"]',
       'div.tiptap.ProseMirror',
       'div[contenteditable="true"].w-full.px-2'
-    ],
-    sendButton: [
-      'button[type="submit"][aria-label="提交"]',
-      'button[type="submit"][aria-label="Submit"]',
-      'button[type="submit"]',
-      'button[aria-label*="Submit"]'
     ],
     inputContainer: [
       'form.w-full.text-base',
@@ -108,7 +88,6 @@ const PLATFORM_SELECTORS = {
     ]
   }
 };
-
 /**
  * 檢測當前平台
  */
@@ -130,7 +109,8 @@ function detectPlatform() {
 const i18nMessages = {
   'zh-TW': {
     promptNotInserted: '找不到輸入框，請確認您在 AI 對話頁面',
-    promptInserted: '提示詞已插入並送出',
+    promptInserted: '提示詞已插入，可繼續調整',
+    showMore: '顯示更多',
     prompts: '提示詞',
     openPromptManager: '開啟提示詞管理器',
     promptManager: '提示詞管理器',
@@ -152,9 +132,16 @@ const i18nMessages = {
     category: '分類',
     categoryPlaceholder: '輸入分類（選填）',
     promptContent: '提示詞內容',
-    promptContentPlaceholder: '輸入提示詞內容，使用 [變數名] 來標記變數',
-    variableTips: '<strong>提示：</strong>使用 [變數名] 來標記變數，例如：[主題]、[關鍵字] 等',
+    promptContentPlaceholder: '輸入提示詞內容...',
+    variableTips: '選取內容後按「設為變數」；既有的 [變數名稱] 也會自動辨識。',
+    markAsVariable: '＋ 設為變數',
+    insertVariable: '加入變數',
+    variableNamePlaceholder: '變數名稱，例如：主題',
+    variableDefaultPlaceholder: '預設內容（選填）',
+    variableNameLabel: '變數名稱',
+    variableDefaultLabel: '預設內容（選填）',
     save: '保存',
+    cancel: '取消',
     delete: '刪除',
     fillRequired: '請填寫提示詞名稱和內容',
     promptUpdated: '提示詞已更新',
@@ -179,7 +166,8 @@ const i18nMessages = {
   },
   'en': {
     promptNotInserted: 'Input box not found, please ensure you are on an AI conversation page',
-    promptInserted: 'Prompt inserted and sent',
+    promptInserted: 'Prompt inserted. You can review and adjust it.',
+    showMore: 'Show more',
     prompts: 'Prompts',
     openPromptManager: 'Open Prompt Manager',
     promptManager: 'Prompt Manager',
@@ -201,9 +189,16 @@ const i18nMessages = {
     category: 'Category',
     categoryPlaceholder: 'Enter category (optional)',
     promptContent: 'Prompt Content',
-    promptContentPlaceholder: 'Enter prompt content, use [variable_name] to mark variables',
-    variableTips: '<strong>Tip:</strong> Use [variable_name] to mark variables, e.g., [topic], [keyword]',
+    promptContentPlaceholder: 'Enter your prompt...',
+    variableTips: 'Select text, then click “Make variable”. Existing [variables] are recognized automatically.',
+    markAsVariable: '+ Make variable',
+    insertVariable: 'Add variable',
+    variableNamePlaceholder: 'Variable name, e.g. topic',
+    variableDefaultPlaceholder: 'Default content (optional)',
+    variableNameLabel: 'Variable name',
+    variableDefaultLabel: 'Default content (optional)',
     save: 'Save',
+    cancel: 'Cancel',
     delete: 'Delete',
     fillRequired: 'Please fill prompt name and content',
     promptUpdated: 'Prompt updated',
@@ -262,194 +257,128 @@ async function initLanguage() {
 /**
  * 監聽來自 popup 的訊息
  */
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'insertPrompt') {
-    insertPromptToTextarea(request.content);
-    sendResponse({ success: true });
-  }
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.action !== 'insertPrompt') return undefined;
+  performPromptAction(request.content)
+    .then(result => sendResponse({ success: result.inserted, result }))
+    .catch(error => sendResponse({ success: false, error: String(error?.message || error) }));
   return true;
 });
 
 /**
  * 插入提示詞到輸入框（支援多平台）
  */
-function insertPromptToTextarea(content) {
-  // 獲取當前平台的選擇器
+function findComposer() {
   const platform = currentPlatform || detectPlatform();
-  const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
-
-  let textarea = null;
-
-  // 嘗試找到輸入框
+  const selectors = platform ? (PLATFORM_SELECTORS[platform]?.textarea || []) : [];
   for (const selector of selectors) {
-    const element = document.querySelector(selector);
-    if (element) {
+    const candidates = document.querySelectorAll(selector);
+    for (const element of candidates) {
       const rect = element.getBoundingClientRect();
-      const isVisible = rect.width > 0 && rect.height > 0;
-      if (isVisible || element.offsetParent !== null || element === document.activeElement) {
-        textarea = element;
-        break;
-      }
+      if (rect.width > 0 && rect.height > 0) return element;
     }
   }
+  return null;
+}
 
-  if (!textarea) {
-    showNotification(t('promptNotInserted'), 'error');
+function captureComposerSelection() {
+  const composer = findComposer();
+  if (!composer) return;
+  if (composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement) {
+    savedComposerSelection = {
+      composer,
+      start: composer.selectionStart,
+      end: composer.selectionEnd
+    };
     return;
   }
 
-  // 如果是 contenteditable div
-  if (textarea.getAttribute('contenteditable') === 'true') {
-    textarea.focus();
-
-    // 先清空現有內容，再插入新內容
-    // 對 ProseMirror 編輯器，使用 execCommand 或 InputEvent 確保框架偵測到變化
-    const selection = window.getSelection();
-
-    // 嘗試方法1：使用 execCommand insertText（最佳相容性）
-    let inserted = false;
-    try {
-      // 先選取所有內容（如需清空）
-      const range = document.createRange();
-      range.selectNodeContents(textarea);
-      selection.removeAllRanges();
-      selection.addRange(range);
-
-      // 用 insertText 替換選取內容
-      inserted = document.execCommand('insertText', false, content);
-    } catch (e) {
-    }
-
-    // 方法2：使用 InputEvent（適用於新版瀏覽器）
-    if (!inserted) {
-      try {
-        // 選取所有內容
-        const range = document.createRange();
-        range.selectNodeContents(textarea);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        const inputEvent = new InputEvent('beforeinput', {
-          inputType: 'insertText',
-          data: content,
-          bubbles: true,
-          cancelable: true
-        });
-        textarea.dispatchEvent(inputEvent);
-
-        // 如果 beforeinput 沒被阻止，手動設定內容
-        if (!inputEvent.defaultPrevented) {
-          textarea.textContent = content;
-        }
-
-        textarea.dispatchEvent(new InputEvent('input', {
-          inputType: 'insertText',
-          data: content,
-          bubbles: true
-        }));
-        inserted = true;
-      } catch (e) {
-      }
-    }
-
-    // 方法3：直接設定內容（最後備用）
-    if (!inserted) {
-      // 清空後插入段落（ProseMirror 格式）
-      const p = document.createElement('p');
-      p.textContent = content;
-      textarea.innerHTML = '';
-      textarea.appendChild(p);
-
-      textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-    }
-
-    // 確保游標在末尾
-    const newRange = document.createRange();
-    newRange.selectNodeContents(textarea);
-    newRange.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
-  } else {
-    // 如果是 textarea
-    // 獲取當前值和光標位置
-    const currentValue = textarea.value;
-    const start = textarea.selectionStart || 0;
-
-    // 插入內容
-    const newValue = currentValue.substring(0, start) + content + currentValue.substring(start);
-
-    // 設置值
-    setNativeValue(textarea, newValue);
-
-    // 觸發輸入事件以確保 React 偵測到變化
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.dispatchEvent(new Event('change', { bubbles: true }));
-    textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
-    textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-
-    // 設置光標位置到插入內容的末尾
-    const newPosition = start + content.length;
-    textarea.setSelectionRange(newPosition, newPosition);
-
-    // 聚焦到輸入框
-    textarea.focus();
+  const selection = window.getSelection();
+  if (selection?.rangeCount && composer.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+    savedComposerSelection = { composer, range: selection.getRangeAt(0).cloneRange() };
   }
-
-  // 等待一下確保內容已經插入，然後點擊送出按鈕
-  setTimeout(() => {
-    clickSendButton();
-  }, 100);
-
-  // 顯示成功通知
-  showNotification(t('promptInserted'), 'success');
 }
 
-/**
- * 點擊送出按鈕（支援多平台）
- */
-function clickSendButton() {
-  // 獲取當前平台的選擇器
-  const platform = currentPlatform || detectPlatform();
-  const buttonSelectors = platform ? PLATFORM_SELECTORS[platform].sendButton : [];
+function dispatchComposerInput(composer, content) {
+  composer.dispatchEvent(new InputEvent('input', {
+    inputType: 'insertText',
+    data: content,
+    bubbles: true
+  }));
+}
 
-  for (const selector of buttonSelectors) {
-    const button = document.querySelector(selector);
-    if (button && !button.disabled && button.getAttribute('aria-disabled') !== 'true') {
-      // 確保按鈕可見且可點擊
-      const rect = button.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        button.click();
-        return true;
-      }
-    }
+function insertPromptToTextarea(content) {
+  const composer = findComposer();
+  if (!composer) {
+    showNotification(t('promptNotInserted'), 'error');
+    return false;
   }
 
-  // 如果找不到按鈕，嘗試使用 Enter 鍵
-  // 支援所有平台的輸入框選擇器
-  const inputElement = document.querySelector('textarea[data-id="root"]') ||
-                       document.querySelector('.tiptap.ProseMirror[contenteditable="true"]') ||  // Grok & Claude
-                       document.querySelector('div[contenteditable="true"].tiptap') ||
-                       document.querySelector('div.ql-editor[contenteditable="true"]') ||  // Gemini
-                       document.querySelector('textarea');
-  if (inputElement) {
-    const enterEvent = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      code: 'Enter',
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true
-    });
-    inputElement.dispatchEvent(enterEvent);
+  if (composer.getAttribute('contenteditable') === 'true') {
+    composer.focus();
+    const selection = window.getSelection();
+    let range = null;
+    if (selection?.rangeCount && composer.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+      range = selection.getRangeAt(0).cloneRange();
+    } else if (savedComposerSelection?.composer === composer && savedComposerSelection.range) {
+      range = savedComposerSelection.range.cloneRange();
+    }
+    if (!range || !range.startContainer?.isConnected) {
+      range = document.createRange();
+      range.selectNodeContents(composer);
+      range.collapse(false);
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let inserted = false;
+    try {
+      inserted = document.execCommand('insertText', false, content);
+    } catch (_error) {
+      inserted = false;
+    }
+    if (!inserted) {
+      range.deleteContents();
+      const textNode = document.createTextNode(content);
+      range.insertNode(textNode);
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    dispatchComposerInput(composer, content);
+    savedComposerSelection = { composer, range: selection.getRangeAt(0).cloneRange() };
     return true;
   }
 
-  return false;
+  const currentValue = composer.value || '';
+  const selectionState = savedComposerSelection?.composer === composer ? savedComposerSelection : null;
+  const start = Number.isInteger(selectionState?.start)
+    ? selectionState.start
+    : (Number.isInteger(composer.selectionStart) ? composer.selectionStart : currentValue.length);
+  const end = Number.isInteger(selectionState?.end)
+    ? selectionState.end
+    : (Number.isInteger(composer.selectionEnd) ? composer.selectionEnd : start);
+  const newValue = currentValue.slice(0, start) + content + currentValue.slice(end);
+  setNativeValue(composer, newValue);
+  dispatchComposerInput(composer, content);
+  composer.dispatchEvent(new Event('change', { bubbles: true }));
+  const newPosition = start + content.length;
+  composer.setSelectionRange(newPosition, newPosition);
+  composer.focus();
+  savedComposerSelection = { composer, start: newPosition, end: newPosition };
+  return true;
 }
 
-/**
- * 設置原生值（用於 React 控制的輸入框）
- */
+async function performPromptAction(content) {
+  const result = await PanelUtils.runPromptAction({
+    content,
+    insert: insertPromptToTextarea
+  });
+
+  if (result.inserted) showNotification(t('promptInserted'), 'success');
+  return result;
+}
 function setNativeValue(element, value) {
   const valueSetter = Object.getOwnPropertyDescriptor(element, 'value')?.set ||
     Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value')?.set;
@@ -525,7 +454,7 @@ async function shouldShowPromoBanner() {
 async function dismissPromoBanner() {
   try {
     await chrome.storage.local.set({ promoDismissed: true });
-    const banner = document.getElementById('promo-banner');
+    const banner = getPanelElement('#promo-banner');
     if (banner) {
       banner.style.display = 'none';
     }
@@ -537,7 +466,7 @@ async function dismissPromoBanner() {
  * 處理「下次再說」按鈕點擊
  */
 function hidePromoBanner() {
-  const banner = document.getElementById('promo-banner');
+  const banner = getPanelElement('#promo-banner');
   if (banner) {
     banner.style.display = 'none';
   }
@@ -555,9 +484,9 @@ function renderPromoBanner() {
           <div class="promo-desc">${t('promoDesc')}</div>
         </div>
         <div class="promo-actions">
-          <a href="https://link.brain168.com/ai-invest" target="_blank" class="promo-btn promo-btn-primary">${t('promoButton')}</a>
-          <button class="promo-btn promo-btn-secondary promo-later-btn">${t('promoLater')}</button>
-          <button class="promo-btn promo-btn-dismiss promo-dismiss-btn">${t('promoDismiss')}</button>
+          <a href="https://link.brain168.com/ai-invest" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" class="promo-btn promo-btn-primary">${t('promoButton')}</a>
+          <button type="button" class="promo-btn promo-btn-secondary promo-later-btn">${t('promoLater')}</button>
+          <button type="button" class="promo-btn promo-btn-dismiss promo-dismiss-btn">${t('promoDismiss')}</button>
         </div>
       </div>
     </div>
@@ -568,8 +497,8 @@ function renderPromoBanner() {
  * 綁定推廣橫幅事件
  */
 function bindPromoBannerEvents() {
-  const dismissBtn = document.querySelector('.promo-dismiss-btn');
-  const laterBtn = document.querySelector('.promo-later-btn');
+  const dismissBtn = getPanelElement('.promo-dismiss-btn');
+  const laterBtn = getPanelElement('.promo-later-btn');
 
   if (dismissBtn) {
     dismissBtn.addEventListener('click', (e) => {
@@ -588,38 +517,19 @@ function bindPromoBannerEvents() {
   }
 }
 
-/**
- * 從提示詞內容中提取變數
- */
-function extractVariables(content) {
-  const regex = /\[([^\]]+)\]/g;
-  const variables = [];
-  let match;
 
-  while ((match = regex.exec(content)) !== null) {
-    const variable = match[1].trim();
-    if (!variables.includes(variable)) {
-      variables.push(variable);
-    }
-  }
-
-  return variables;
+function loadPromoBannerWhenReady(panel) {
+  shouldShowPromoBanner().then(showPromo => {
+    if (!showPromo || promptPanel !== panel || !panel.isConnected || panel.querySelector('#promo-banner')) return;
+    const template = document.createElement('template');
+    template.innerHTML = renderPromoBanner().trim();
+    const banner = template.content.firstElementChild;
+    const search = panel.querySelector('.prompt-panel-search');
+    if (!banner || !search) return;
+    search.before(banner);
+    bindPromoBannerEvents();
+  });
 }
-
-/**
- * 替換提示詞中的變數
- */
-function replaceVariables(content, values) {
-  let result = content;
-
-  for (const [variable, value] of Object.entries(values)) {
-    const regex = new RegExp(`\\[${variable}\\]`, 'g');
-    result = result.replace(regex, value);
-  }
-
-  return result;
-}
-
 /**
  * 為按鈕設定固定定位樣式（備用方案）
  */
@@ -652,102 +562,68 @@ function applyCenteredButtonStyle(button, options = {}) {
 /**
  * 嘗試在 Claude 平台插入按鈕
  */
-function insertButtonForClaude(button) {
-  // 方法1：通過 data-testid="chat-input" 找到輸入框，然後向上找到主容器
-  const chatInput = document.querySelector('[data-testid="chat-input"]');
-  if (chatInput) {
-    const container = chatInput.closest('div.flex.flex-col.bg-bg-000');
-    if (container && container.parentElement) {
-      const computedStyle = window.getComputedStyle(container);
-      applyCenteredButtonStyle(button);
-      button.style.width = computedStyle.width;
-      button.style.marginLeft = computedStyle.marginLeft;
-      button.style.marginRight = computedStyle.marginRight;
-      container.parentElement.insertBefore(button, container);
-      return true;
-    }
-  }
-
-  // 方法2：直接找輸入框容器
-  const inputArea = document.querySelector('div.flex.flex-col.bg-bg-000');
-  if (inputArea && inputArea.parentElement) {
-    const computedStyle = window.getComputedStyle(inputArea);
-    applyCenteredButtonStyle(button);
-    button.style.width = computedStyle.width;
-    button.style.marginLeft = computedStyle.marginLeft;
-    button.style.marginRight = computedStyle.marginRight;
-    inputArea.parentElement.insertBefore(button, inputArea);
-    return true;
-  }
-
-  // 方法3：舊版選擇器（向後兼容）
-  const claudeTopContainer = document.querySelector('.top-5.z-10.mx-auto.w-full.max-w-2xl');
-  if (claudeTopContainer && claudeTopContainer.firstElementChild) {
-    applyCenteredButtonStyle(button);
-    claudeTopContainer.insertBefore(button, claudeTopContainer.firstElementChild);
-    return true;
-  }
-
-  return false;
+function insertComposerOverlayButton(button, className) {
+  // Keep extension-owned UI outside each site's framework-managed composer tree.
+  button.classList.add(className);
+  button.style.position = 'fixed';
+  button.style.left = '50%';
+  button.style.bottom = '88px';
+  button.style.transform = 'translateX(-50%)';
+  button.style.width = 'min(768px, calc(100vw - 32px))';
+  button.style.margin = '0';
+  button.style.justifyContent = 'center';
+  button.style.boxSizing = 'border-box';
+  button.style.pointerEvents = 'auto';
+  button.style.zIndex = '2147483646';
+  document.body.appendChild(button);
+  positionComposerOverlayButton(button);
+  return true;
 }
 
-/**
- * 嘗試在 ChatGPT 平台插入按鈕
- */
+function positionComposerOverlayButton(button) {
+  const composer = findComposer();
+  if (!composer) {
+    button.style.top = 'auto';
+    button.style.bottom = '88px';
+    button.style.left = '50%';
+    button.style.width = 'min(768px, calc(100vw - 32px))';
+    return;
+  }
+
+  const anchor = composer.closest('fieldset') || composer.closest('form') || composer;
+  const anchorRect = anchor.getBoundingClientRect();
+  const availableWidth = Math.max(240, Math.min(anchorRect.width, window.innerWidth - 32));
+  const buttonHeight = button.offsetHeight || 38;
+  button.style.bottom = 'auto';
+  button.style.left = `${anchorRect.left + (anchorRect.width / 2)}px`;
+  button.style.top = `${Math.max(8, anchorRect.top - buttonHeight - 8)}px`;
+  button.style.width = `${availableWidth}px`;
+}
+function positionChatGPTButton(button) {
+  positionComposerOverlayButton(button);
+}
+
+function positionClaudeButton(button) {
+  positionComposerOverlayButton(button);
+}
+
+function insertButtonForClaude(button) {
+  return insertComposerOverlayButton(button, 'claude-composer-overlay');
+}
+
 function insertButtonForChatGPT(button) {
-  // 方法1：找到 unified-composer form，在 form 內部頂端插入
-  const composerForm = document.querySelector('form[data-type="unified-composer"]');
-  if (composerForm) {
-    applyCenteredButtonStyle(button, { marginBottom: '4px' });
-    composerForm.insertBefore(button, composerForm.firstElementChild);
-    return true;
-  }
+  return insertComposerOverlayButton(button, 'chatgpt-composer-overlay');
+}
 
-  // 方法2：通過 #prompt-textarea 向上找到 form
-  const promptTextarea = document.querySelector('#prompt-textarea');
-  if (promptTextarea) {
-    const form = promptTextarea.closest('form');
-    if (form) {
-      applyCenteredButtonStyle(button, { marginBottom: '4px' });
-      form.insertBefore(button, form.firstElementChild);
-      return true;
-    }
-    // 向上找到合適的容器
-    const parent = promptTextarea.parentElement;
-    if (parent && parent.parentElement) {
-      applyCenteredButtonStyle(button, { marginBottom: '4px' });
-      parent.parentElement.insertBefore(button, parent);
-      return true;
-    }
-  }
-
-  return false;
+function insertButtonForGemini(button) {
+  return insertComposerOverlayButton(button, 'gemini-composer-overlay');
 }
 
 /**
  * 嘗試在 Grok 平台插入按鈕
  */
 function insertButtonForGrok(button) {
-  // 方法1：找到 query-bar 容器
-  const queryBar = document.querySelector('.query-bar');
-  if (queryBar && queryBar.firstElementChild) {
-    applyCenteredButtonStyle(button, { marginBottom: '4px', maxWidth: 'breakout' });
-    queryBar.insertBefore(button, queryBar.firstElementChild);
-    return true;
-  }
-
-  // 方法2：找到外層容器
-  const grokInputContainer = document.querySelector('.flex.flex-col.gap-0.justify-center.w-full.relative.items-center');
-  if (grokInputContainer) {
-    const innerQueryBar = grokInputContainer.querySelector('.query-bar');
-    if (innerQueryBar) {
-      applyCenteredButtonStyle(button, { marginBottom: '4px', maxWidth: 'breakout' });
-      grokInputContainer.insertBefore(button, innerQueryBar);
-      return true;
-    }
-  }
-
-  return false;
+  return insertComposerOverlayButton(button, 'grok-composer-overlay');
 }
 
 /**
@@ -757,6 +633,7 @@ function createQuickAccessButton() {
   if (document.getElementById('prompt-manager-quick-btn')) return;
 
   const button = document.createElement('button');
+  button.type = 'button';
   button.id = 'prompt-manager-quick-btn';
   button.className = 'prompt-quick-btn';
   button.innerHTML = `
@@ -766,74 +643,138 @@ function createQuickAccessButton() {
     <span>${t('prompts')}</span>
   `;
   button.title = t('openPromptManager');
-  button.addEventListener('click', togglePromptPanel);
+  button.addEventListener('pointerdown', captureComposerSelection, { capture: true });
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    togglePromptPanel();
+  });
 
   const platform = currentPlatform || detectPlatform();
-  const inputContainer = findInputContainer();
 
-  // ChatGPT 平台特殊處理
-  if (platform === PLATFORMS.CHATGPT) {
-    if (insertButtonForChatGPT(button)) return;
-    applyFixedPositionStyle(button);
-    document.body.appendChild(button);
+  const inserters = {
+    [PLATFORMS.CHATGPT]: insertButtonForChatGPT,
+    [PLATFORMS.CLAUDE]: insertButtonForClaude,
+    [PLATFORMS.GEMINI]: insertButtonForGemini,
+    [PLATFORMS.GROK]: insertButtonForGrok
+  };
+  const insertButton = inserters[platform];
+  if (insertButton) {
+    insertButton(button);
     return;
   }
 
-  // Claude 平台特殊處理
-  if (platform === PLATFORMS.CLAUDE) {
-    if (insertButtonForClaude(button)) return;
-    applyFixedPositionStyle(button);
-    document.body.appendChild(button);
-    return;
-  }
-
-  // Grok 平台特殊處理
-  if (platform === PLATFORMS.GROK) {
-    if (insertButtonForGrok(button)) return;
-    applyFixedPositionStyle(button);
-    document.body.appendChild(button);
-    return;
-  }
-
-  // Gemini 和 ChatGPT 通用處理
-  if (inputContainer && inputContainer.parentElement) {
-
-    let targetParent = inputContainer.parentElement;
-    let referenceNode = inputContainer;
-
-    // Gemini 平台：向上找一層
-    if (platform === PLATFORMS.GEMINI && targetParent.parentElement) {
-      referenceNode = targetParent;
-      targetParent = targetParent.parentElement;
-    }
-
-    targetParent.insertBefore(button, referenceNode);
-  } else {
-    button.classList.add('fixed-position');
-    document.body.appendChild(button);
-  }
+  applyFixedPositionStyle(button);
+  document.body.appendChild(button);
 }
 
 /**
  * 切換提示詞面板顯示
  */
-async function togglePromptPanel() {
-  if (promptPanel && promptPanel.parentElement) {
-    promptPanel.remove();
-    promptPanel = null;
-  } else {
-    await createPromptPanel();
-  }
+function ensurePromptPanelHost() {
+  if (promptPanelHost?.isConnected && promptPanelRoot) return;
+
+  promptPanelHost = document.createElement('div');
+  promptPanelHost.id = 'ai-prompts-plus-panel-host';
+  promptPanelHost.style.all = 'initial';
+  promptPanelHost.style.position = 'fixed';
+  promptPanelHost.style.top = '16px';
+  promptPanelHost.style.right = '16px';
+  promptPanelHost.style.display = 'block';
+  promptPanelHost.style.visibility = 'hidden';
+  promptPanelHost.style.pointerEvents = 'none';
+  promptPanelHost.style.width = '0';
+  promptPanelHost.style.maxHeight = '0';
+  promptPanelHost.style.overflow = 'hidden';
+  promptPanelHost.style.zIndex = '2147483647';
+  promptPanelRoot = promptPanelHost.attachShadow({ mode: 'closed' });
+  const stylesheet = document.createElement('link');
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = chrome.runtime.getURL('content.css');
+  promptPanelRoot.appendChild(stylesheet);
+  document.body.appendChild(promptPanelHost);
+}
+function hidePromptPanelHost() {
+  if (!promptPanelHost) return;
+  promptPanelHost.style.visibility = 'hidden';
+  promptPanelHost.style.pointerEvents = 'none';
+  promptPanelHost.style.width = '0';
+  promptPanelHost.style.maxHeight = '0';
+  promptPanelHost.style.overflow = 'hidden';
 }
 
+function showPromptPanelHost() {
+  if (!promptPanelHost) return;
+  promptPanelHost.style.visibility = 'visible';
+  promptPanelHost.style.pointerEvents = 'auto';
+  promptPanelHost.style.width = 'min(480px, calc(100vw - 32px))';
+  promptPanelHost.style.maxHeight = 'calc(100vh - 32px)';
+  promptPanelHost.style.overflow = 'visible';
+}
+
+function positionPromptPanel() {
+  if (!promptPanel?.isConnected) return;
+  promptPanel.style.top = 'auto';
+  promptPanel.style.right = 'auto';
+  promptPanel.style.left = 'auto';
+}
+
+function getPanelElement(selector) {
+  return promptPanel?.querySelector(selector) || null;
+}
+
+function refreshPromptList(prompts = promptsData) {
+  currentViewPrompts = prompts;
+  const list = getPanelElement('#prompt-panel-list');
+  if (!list) return;
+  list.innerHTML = renderPromptList(prompts);
+  bindPromptItemEvents();
+}
+
+function refreshPromptListForCurrentSearch() {
+  const searchInput = getPanelElement('#prompt-search');
+  const queryValue = String(searchInput?.value || '');
+  const query = queryValue.startsWith('/') ? queryValue.slice(1).trim() : queryValue.trim();
+  refreshPromptList(PanelUtils.filterPrompts(promptsData, query));
+}
+async function togglePromptPanel() {
+  if (promptPanel?.isConnected) {
+    panelCleanupTasks.forEach(cleanup => cleanup());
+    panelCleanupTasks.clear();
+    window.clearTimeout(searchDebounceTimer);
+    promptPanel?.remove();
+    promptPanel = null;
+    hidePromptPanelHost();
+    return;
+  }
+  if (panelOpenPromise) return panelOpenPromise;
+  panelOpenPromise = createPromptPanel().finally(() => {
+    panelOpenPromise = null;
+  });
+  return panelOpenPromise;
+}
 /**
  * 創建提示詞面板
  */
+function loadPromptsData(force = false) {
+  if (force) promptsLoadPromise = null;
+  if (promptsLoadPromise) return promptsLoadPromise;
+  promptsLoadPromise = StorageManager.getAllPrompts()
+    .then(prompts => {
+      promptsData = Array.isArray(prompts) ? prompts : [];
+      return promptsData;
+    })
+    .catch(error => {
+      promptsLoadPromise = null;
+      throw error;
+    });
+  return promptsLoadPromise;
+}
+
 async function createPromptPanel() {
   // 從 storage 載入提示詞
   try {
-    const result = await chrome.storage.local.get('prompts');
-    promptsData = result.prompts || [];
+    await loadPromptsData();
   } catch (error) {
     // Extension context invalidated - 擴充功能已重新載入
     if (error.message.includes('Extension context invalidated')) {
@@ -844,28 +785,29 @@ async function createPromptPanel() {
   }
 
   // 建立面板容器
+  // Closed Shadow DOM keeps local prompt data isolated from the host page.
+  ensurePromptPanelHost();
+  showPromptPanelHost();
+
   promptPanel = document.createElement('div');
   promptPanel.id = 'prompt-manager-panel';
   promptPanel.className = 'prompt-panel';
-
-  // 檢查是否需要顯示推廣橫幅
-  const showPromo = await shouldShowPromoBanner();
+  PanelUtils.isolateHostEvents(promptPanel);
 
   promptPanel.innerHTML = `
     <div class="prompt-panel-header">
       <h3>${t('promptManager')}</h3>
       <div class="prompt-panel-header-actions">
-        <button class="prompt-panel-add" title="${t('addPrompt')}">
+        <button type="button" class="prompt-panel-add" title="${t('addPrompt')}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
           ${t('add')}
         </button>
-        <button class="prompt-panel-close" title="${t('close')}">✕</button>
+        <button type="button" class="prompt-panel-close" title="${t('close')}">✕</button>
       </div>
     </div>
-    ${showPromo ? renderPromoBanner() : ''}
     <div class="prompt-panel-search">
       <input type="text" id="prompt-search" placeholder="${t('searchPrompts')}" />
     </div>
@@ -874,15 +816,8 @@ async function createPromptPanel() {
     </div>
   `;
 
-  // 找到按鈕，插入到按鈕下方（輸入框上方）
-  const button = document.getElementById('prompt-manager-quick-btn');
-  if (button && button.parentElement) {
-    // 插入到按鈕的下一個兄弟節點之前
-    button.parentElement.insertBefore(promptPanel, button.nextSibling);
-  } else {
-    // 備用方案：插入到 body
-    document.body.appendChild(promptPanel);
-  }
+  PanelUtils.mountPanel(promptPanel, promptPanelRoot);
+  positionPromptPanel();
 
   // 綁定事件
   promptPanel.querySelector('.prompt-panel-close').addEventListener('click', () => {
@@ -895,27 +830,20 @@ async function createPromptPanel() {
 
   const searchInput = promptPanel.querySelector('#prompt-search');
 
-  searchInput.addEventListener('input', (e) => {
-    let query = e.target.value;
-
-    // 如果以 / 開頭，移除 / 並進行搜尋
-    if (query.startsWith('/')) {
-      query = query.substring(1);
-    }
-
-    const queryLower = query.toLowerCase();
-    const filtered = promptsData.filter(p =>
-      p.name.toLowerCase().includes(queryLower) ||
-      p.content.toLowerCase().includes(queryLower) ||
-      (p.category && p.category.toLowerCase().includes(queryLower))
-    );
-    document.getElementById('prompt-panel-list').innerHTML = renderPromptList(filtered);
-    bindPromptItemEvents();
+  searchInput.addEventListener('input', () => {
+    const queryValue = String(searchInput.value || '');
+    window.clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = window.setTimeout(() => {
+      const query = queryValue.startsWith('/') ? queryValue.slice(1) : queryValue;
+      const queryLower = query.toLocaleLowerCase();
+      const filtered = PanelUtils.filterPrompts(promptsData, queryLower);
+      visiblePromptCount = 100;
+      refreshPromptList(filtered);
+    }, 80);
   });
-
   // 按下 Enter 鍵時，如果只有一個結果，直接使用該提示詞
   searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (PanelUtils.isConfirmKey(e)) {
       let query = searchInput.value;
 
       if (query.startsWith('/')) {
@@ -923,11 +851,7 @@ async function createPromptPanel() {
       }
 
       const queryLower = query.toLowerCase();
-      const filtered = promptsData.filter(p =>
-        p.name.toLowerCase().includes(queryLower) ||
-        p.content.toLowerCase().includes(queryLower) ||
-        (p.category && p.category.toLowerCase().includes(queryLower))
-      );
+      const filtered = PanelUtils.filterPrompts(promptsData, queryLower);
 
       if (filtered.length === 1) {
         usePrompt(filtered[0]);
@@ -936,11 +860,7 @@ async function createPromptPanel() {
   });
 
   bindPromptItemEvents();
-
-  // 綁定推廣橫幅事件
-  if (showPromo) {
-    bindPromoBannerEvents();
-  }
+  loadPromoBannerWhenReady(promptPanel);
 }
 
 /**
@@ -964,7 +884,7 @@ function findInputContainer() {
 
   // Claude 特殊處理
   if (platform === PLATFORMS.CLAUDE) {
-    const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
+    const containerSelectors = PLATFORM_SELECTORS[platform]?.inputContainer || [];
     const container = findFirstMatch(containerSelectors);
     if (container) return container;
 
@@ -987,7 +907,7 @@ function findInputContainer() {
 
   // Grok 特殊處理
   if (platform === PLATFORMS.GROK) {
-    const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
+    const containerSelectors = PLATFORM_SELECTORS[platform]?.inputContainer || [];
     const container = findFirstMatch(containerSelectors);
     if (container) return container;
 
@@ -996,7 +916,8 @@ function findInputContainer() {
       return grokForm;
     }
 
-    const grokEditor = document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
+    const grokEditor = document.querySelector('div[role="textbox"][aria-label="Ask Grok anything"][contenteditable="true"]') ||
+      document.querySelector('div[contenteditable="true"].tiptap.ProseMirror');
     if (grokEditor && grokEditor.parentElement) {
       return grokEditor.parentElement.parentElement;
     }
@@ -1015,7 +936,7 @@ function findInputContainer() {
 
   // ChatGPT 特殊處理
   if (platform === PLATFORMS.CHATGPT) {
-    const containerSelectors = PLATFORM_SELECTORS[platform].inputContainer || [];
+    const containerSelectors = PLATFORM_SELECTORS[platform]?.inputContainer || [];
     const container = findFirstMatch(containerSelectors);
     if (container) return container;
 
@@ -1039,7 +960,7 @@ function findInputContainer() {
   }
 
   // 通用方法：找 textarea 然後找容器
-  const selectors = platform ? PLATFORM_SELECTORS[platform].textarea : [];
+  const selectors = platform ? (PLATFORM_SELECTORS[platform]?.textarea || []) : [];
   for (const selector of selectors) {
     const textarea = document.querySelector(selector);
     if (textarea) {
@@ -1054,6 +975,29 @@ function findInputContainer() {
 /**
  * 渲染提示詞列表
  */
+function renderHighlightedPromptContent(content) {
+  const parts = VariableUtils.createHighlightedContentParts(content);
+  const markup = parts.map(part => {
+    if (part.type === 'text') return escapeHtml(part.text);
+    return `<span class="variable-token-${part.type}">${escapeHtml(part.text)}</span>`;
+  }).join('');
+
+  return markup + (content.endsWith('\n') ? ' ' : '');
+}
+
+function renderVariableTag(variable) {
+  const parts = VariableUtils.createVariableDisplayParts(variable);
+  const label = parts.map(part => part.text).join('');
+
+  if (!parts.length) return '';
+
+  return `
+    <span class="variable-tag" aria-label="${escapeHtml(label)}">
+      ${parts.map(part => `<span class="variable-token-${part.type}">${escapeHtml(part.text)}</span>`).join('')}
+    </span>
+  `;
+}
+
 function renderPromptList(prompts) {
   if (prompts.length === 0) {
     return `<div class="prompt-panel-empty">${t('noPrompts')}</div>`;
@@ -1068,11 +1012,12 @@ function renderPromptList(prompts) {
     return (b.usageCount || 0) - (a.usageCount || 0);
   });
 
-  return sortedPrompts.map(prompt => {
-    const variables = extractVariables(prompt.content);
+  const visiblePrompts = sortedPrompts.slice(0, visiblePromptCount);
+  const markup = visiblePrompts.map(prompt => {
+    const variables = VariableUtils.parseVariables(prompt.content);
     const isPinned = prompt.pinned || false;
     return `
-      <div class="prompt-item ${isPinned ? 'pinned' : ''}" data-id="${prompt.id}">
+      <div class="prompt-item ${isPinned ? 'pinned' : ''}" data-id="${encodeURIComponent(prompt.id)}">
         <div class="prompt-item-header">
           <div class="prompt-item-title">
             ${isPinned ? '<span class="pin-indicator">📌</span>' : ''}
@@ -1080,18 +1025,18 @@ function renderPromptList(prompts) {
           </div>
           <div class="prompt-item-actions">
             ${prompt.category ? `<span class="prompt-item-category">${escapeHtml(prompt.category)}</span>` : ''}
-            <button class="prompt-item-pin" data-id="${prompt.id}" title="${isPinned ? t('unpin') : t('pin')}">
+            <button type="button" class="prompt-item-pin" data-id="${encodeURIComponent(prompt.id)}" title="${isPinned ? t('unpin') : t('pin')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
             </button>
-            <button class="prompt-item-edit" data-id="${prompt.id}" title="${t('edit')}">
+            <button type="button" class="prompt-item-edit" data-id="${encodeURIComponent(prompt.id)}" title="${t('edit')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
-            <button class="prompt-item-delete" data-id="${prompt.id}" title="${t('delete')}">
+            <button type="button" class="prompt-item-delete" data-id="${encodeURIComponent(prompt.id)}" title="${t('delete')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1104,90 +1049,51 @@ function renderPromptList(prompts) {
         <div class="prompt-item-content">${escapeHtml(prompt.content.substring(0, 100))}${prompt.content.length > 100 ? '...' : ''}</div>
         ${variables.length > 0 ? `
           <div class="prompt-item-variables">
-            ${variables.map(v => `<span class="variable-tag">[${escapeHtml(v)}]</span>`).join('')}
+            ${variables.map(renderVariableTag).join('')}
           </div>
         ` : ''}
       </div>
     `;
   }).join('');
+  const remaining = sortedPrompts.length - visiblePrompts.length;
+  return markup + (remaining > 0
+    ? `<button type="button" class="prompt-load-more">${t('showMore')} (${remaining})</button>`
+    : '');
 }
 
 /**
  * 綁定提示詞項目事件
  */
 function bindPromptItemEvents() {
-  const items = document.querySelectorAll('.prompt-item');
-  items.forEach(item => {
-    // 點擊項目使用提示詞
-    item.addEventListener('click', (e) => {
-      // 如果點擊的是按鈕，不執行使用提示詞
-      if (e.target.closest('.prompt-item-edit') ||
-          e.target.closest('.prompt-item-delete') ||
-          e.target.closest('.prompt-item-pin')) {
-        return;
-      }
-      const id = item.dataset.id;
-      const prompt = promptsData.find(p => p.id === id);
-      if (prompt) {
-        usePrompt(prompt);
-      }
-    });
-
-    // 置頂按鈕事件
-    const pinBtn = item.querySelector('.prompt-item-pin');
-    if (pinBtn) {
-      pinBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = pinBtn.dataset.id;
-        await togglePinPrompt(id);
-      });
+  const list = getPanelElement('#prompt-panel-list');
+  if (!list || list.dataset.eventsBound === 'true') return;
+  list.dataset.eventsBound = 'true';
+  list.addEventListener('click', async event => {
+    if (event.target.closest('.prompt-load-more')) {
+      visiblePromptCount += 100;
+      refreshPromptList(currentViewPrompts);
+      return;
     }
-
-    // 編輯按鈕事件
-    const editBtn = item.querySelector('.prompt-item-edit');
-    if (editBtn) {
-      editBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = editBtn.dataset.id;
-        const prompt = promptsData.find(p => p.id === id);
-        if (prompt) {
-          showAddPromptPanel(prompt);
-        }
-      });
-    }
-
-    // 刪除按鈕事件
-    const deleteBtn = item.querySelector('.prompt-item-delete');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = deleteBtn.dataset.id;
-        await deletePrompt(id);
-      });
-    }
+    const item = event.target.closest('.prompt-item');
+    if (!item) return;
+    const id = decodeURIComponent(item.dataset.id);
+    const prompt = promptsData.find(candidate => candidate.id === id);
+    if (!prompt) return;
+    if (event.target.closest('.prompt-item-pin')) await togglePinPrompt(id);
+    else if (event.target.closest('.prompt-item-edit')) showAddPromptPanel(prompt);
+    else if (event.target.closest('.prompt-item-delete')) await deletePrompt(id);
+    else usePrompt(prompt);
   });
 }
-
 /**
  * 切換提示詞置頂狀態
  */
 async function togglePinPrompt(id) {
   try {
-    const result = await chrome.storage.local.get('prompts');
-    const prompts = result.prompts || [];
-    const prompt = prompts.find(p => p.id === id);
-
-    if (prompt) {
-      prompt.pinned = !prompt.pinned;
-      await chrome.storage.local.set({ prompts });
-      promptsData = prompts;
-
-      // 重新渲染列表
-      document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
-      bindPromptItemEvents();
-
-      showNotification(prompt.pinned ? t('pinned') : t('unpinned'), 'success');
-    }
+    const prompt = await StorageManager.togglePinPrompt(id);
+    await loadPromptsData(true);
+    refreshPromptListForCurrentSearch();
+    showNotification(prompt.pinned ? t('pinned') : t('unpinned'), 'success');
   } catch (error) {
     showNotification(t('pinFailed'), 'error');
   }
@@ -1197,21 +1103,11 @@ async function togglePinPrompt(id) {
  * 刪除提示詞
  */
 async function deletePrompt(id) {
-  if (!confirm(t('confirmDelete'))) {
-    return;
-  }
-
+  if (!confirm(t('confirmDelete'))) return;
   try {
-    const result = await chrome.storage.local.get('prompts');
-    const prompts = result.prompts || [];
-    const filtered = prompts.filter(p => p.id !== id);
-    await chrome.storage.local.set({ prompts: filtered });
-    promptsData = filtered;
-
-    // 重新渲染列表
-    document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
-    bindPromptItemEvents();
-
+    await StorageManager.deletePrompt(id);
+    await loadPromptsData(true);
+    refreshPromptListForCurrentSearch();
     showNotification(t('promptDeleted'), 'success');
   } catch (error) {
     showNotification(t('deleteFailed'), 'error');
@@ -1222,18 +1118,67 @@ async function deletePrompt(id) {
  * 使用提示詞
  */
 function usePrompt(prompt) {
-  const variables = extractVariables(prompt.content);
+  const variables = VariableUtils.parseVariables(prompt.content);
 
   if (variables.length === 0) {
-    // 沒有變數，直接插入
-    insertPromptToTextarea(prompt.content);
-    incrementUsageCount(prompt.id);
-    togglePromptPanel();
+    showPromptActionPanel(prompt);
   } else {
     // 有變數，顯示輸入界面
     currentPrompt = prompt;
     showVariableInputPanel(prompt, variables);
   }
+}
+
+function showPromptActionPanel(prompt) {
+  const existingPanel = promptPanel.querySelector('.prompt-variable-panel, .prompt-add-panel');
+  if (existingPanel) {
+    showNotification(t('completeCurrentOperation'), 'error');
+    return;
+  }
+
+  const list = getPanelElement('#prompt-panel-list');
+  const searchBox = promptPanel.querySelector('.prompt-panel-search');
+  const actionPanel = document.createElement('div');
+  actionPanel.className = 'prompt-variable-panel prompt-action-panel';
+  actionPanel.innerHTML = `
+    <div class="prompt-variable-header">
+      <button type="button" class="prompt-back-btn">${t('back')}</button>
+      <h4>${escapeHtml(prompt.name)}</h4>
+    </div>
+    <div class="prompt-action-preview">${escapeHtml(prompt.content)}</div>
+    <div class="prompt-variable-actions">
+      <button type="button" class="prompt-insert-btn">${t('insertPrompt')}</button>
+
+    </div>
+  `;
+
+  list.style.display = 'none';
+  searchBox.style.display = 'none';
+  promptPanel.appendChild(actionPanel);
+
+  actionPanel.querySelector('.prompt-back-btn').addEventListener('click', () => {
+    actionPanel.remove();
+    list.style.display = 'block';
+    searchBox.style.display = 'block';
+  });
+
+  async function completeAction() {
+    if (activePromptAction) return;
+    activePromptAction = true;
+    actionPanel.querySelectorAll('button').forEach(button => { button.disabled = true; });
+    try {
+      const result = await performPromptAction(prompt.content);
+      if (!result.inserted) return;
+      await incrementUsageCount(prompt.id);
+      await togglePromptPanel();
+    } finally {
+      activePromptAction = false;
+      if (actionPanel.isConnected) {
+        actionPanel.querySelectorAll('button').forEach(button => { button.disabled = false; });
+      }
+    }
+  }
+  actionPanel.querySelector('.prompt-insert-btn').addEventListener('click', completeAction);
 }
 
 /**
@@ -1249,27 +1194,40 @@ function showVariableInputPanel(prompt, variables) {
   }
 
   // 隱藏提示詞列表
-  const list = document.getElementById('prompt-panel-list');
+  const list = getPanelElement('#prompt-panel-list');
 
   const variablePanel = document.createElement('div');
   variablePanel.className = 'prompt-variable-panel';
   variablePanel.innerHTML = `
     <div class="prompt-variable-header">
-      <button class="prompt-back-btn">${t('back')}</button>
+      <button type="button" class="prompt-back-btn">${t('back')}</button>
       <h4>${escapeHtml(prompt.name)}</h4>
     </div>
-    <div class="prompt-variable-inputs">
-      ${variables.map(v => `
-        <div class="prompt-variable-group">
-          <label>${escapeHtml(v)}</label>
-          <input type="text" class="prompt-variable-input" data-variable="${escapeHtml(v)}" placeholder="${t('enterValue', { variable: escapeHtml(v) })}" />
-        </div>
-      `).join('')}
-    </div>
+    <div class="prompt-variable-inputs"></div>
+
     <div class="prompt-variable-actions">
-      <button class="prompt-insert-btn">${t('insertPrompt')}</button>
+      <button type="button" class="prompt-insert-btn">${t('insertPrompt')}</button>
+
     </div>
   `;
+  const inputsContainer = variablePanel.querySelector('.prompt-variable-inputs');
+  variables.forEach(variable => {
+    const group = document.createElement('div');
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+
+    group.className = 'prompt-variable-group';
+    label.textContent = variable.name;
+    input.type = 'text';
+    input.className = 'prompt-variable-input';
+    input.dataset.variable = variable.name;
+    input.dataset.defaultValue = variable.defaultValue || '';
+    input.placeholder = t('enterValue', { variable: variable.name });
+    input.value = variable.defaultValue || '';
+
+    group.append(label, input);
+    inputsContainer.appendChild(group);
+  });
 
   list.style.display = 'none';
   promptPanel.querySelector('.prompt-panel-search').style.display = 'none';
@@ -1283,104 +1241,77 @@ function showVariableInputPanel(prompt, variables) {
   });
 
   // 綁定插入按鈕
-  variablePanel.querySelector('.prompt-insert-btn').addEventListener('click', () => {
-    insertVariablePrompt();
-  });
+  variablePanel.querySelector('.prompt-insert-btn').addEventListener('click', insertVariablePrompt);
 
-  // 功能1：為所有變數輸入框添加事件監聽
+  // 為所有變數輸入框添加 Enter 鍵監聽
   const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
   inputs.forEach(input => {
     // Enter 鍵送出
     input.addEventListener('keydown', (e) => {
-      // 阻止事件冒泡，防止 Grok 等平台捕獲鍵盤事件
-      e.stopPropagation();
-      if (e.key === 'Enter') {
+      if (PanelUtils.isConfirmKey(e)) {
         e.preventDefault();
         insertVariablePrompt();
       }
-    });
-
-    // 阻止 input 事件冒泡，防止 Grok 等平台搶奪焦點
-    input.addEventListener('input', (e) => {
-      e.stopPropagation();
-    });
-
-    // 阻止 focus/blur 事件冒泡
-    input.addEventListener('focus', (e) => {
-      e.stopPropagation();
-    });
-
-    input.addEventListener('blur', (e) => {
-      e.stopPropagation();
-    });
-
-    // 阻止其他可能被捕獲的事件
-    input.addEventListener('keyup', (e) => {
-      e.stopPropagation();
-    });
-
-    input.addEventListener('keypress', (e) => {
-      e.stopPropagation();
     });
   });
 
   // 聚焦第一個輸入框
   const firstInput = variablePanel.querySelector('.prompt-variable-input');
   if (firstInput) {
-    setTimeout(() => firstInput.focus(), 100);
+    setTimeout(() => { if (firstInput.isConnected) firstInput.focus(); }, 100);
   }
 }
 
 /**
  * 插入變數提示詞（供 Enter 鍵和按鈕使用）
  */
-function insertVariablePrompt() {
-  const variablePanel = document.querySelector('.prompt-variable-panel');
-  if (!variablePanel) return;
+async function insertVariablePrompt() {
+  const variablePanel = promptPanel?.querySelector('.prompt-variable-panel');
+  if (!variablePanel || activePromptAction) return;
 
-  const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
-  const values = {};
+  const values = new Map();
   let hasError = false;
-
-  inputs.forEach(input => {
+  variablePanel.querySelectorAll('.prompt-variable-input').forEach(input => {
     const variable = input.dataset.variable;
     const value = input.value.trim();
-    if (!value) {
+    const defaultValue = input.dataset.defaultValue;
+    if (!value && !defaultValue) {
       input.style.borderColor = '#ef4444';
       hasError = true;
     } else {
       input.style.borderColor = '';
-      values[variable] = value;
+      values.set(variable, value || defaultValue);
     }
   });
-
   if (hasError) {
     showNotification(t('fillAllVariables'), 'error');
     return;
   }
 
-  const finalContent = replaceVariables(currentPrompt.content, values);
-  insertPromptToTextarea(finalContent);
-  incrementUsageCount(currentPrompt.id);
-  togglePromptPanel();
+  activePromptAction = true;
+  variablePanel.querySelectorAll('button, input').forEach(element => { element.disabled = true; });
+  try {
+    const finalContent = VariableUtils.replaceVariables(currentPrompt.content, values);
+    const result = await performPromptAction(finalContent);
+    if (!result.inserted) return;
+    await incrementUsageCount(currentPrompt.id);
+    await togglePromptPanel();
+  } finally {
+    activePromptAction = false;
+    if (variablePanel.isConnected) {
+      variablePanel.querySelectorAll('button, input').forEach(element => { element.disabled = false; });
+    }
+  }
 }
-
 /**
  * 增加使用次數
  */
 async function incrementUsageCount(id) {
   try {
-    const result = await chrome.storage.local.get('prompts');
-    const prompts = result.prompts || [];
-    const prompt = prompts.find(p => p.id === id);
-    if (prompt) {
-      prompt.usageCount = (prompt.usageCount || 0) + 1;
-      prompt.lastUsedAt = new Date().toISOString();
-      await chrome.storage.local.set({ prompts });
-    }
+    await StorageManager.incrementUsageCount(id);
   } catch (error) {
-    // 靜默處理 extension context invalidated 錯誤
-    if (!error.message.includes('Extension context invalidated')) {
+    if (!String(error?.message).includes('Extension context invalidated')) {
+      showNotification(t('saveFailed'), 'error');
     }
   }
 }
@@ -1390,41 +1321,58 @@ async function incrementUsageCount(id) {
  */
 function showAddPromptPanel(editPrompt = null) {
   // 檢查是否已經有新增面板存在
-  const existingAddPanel = promptPanel.querySelector('.prompt-add-panel');
-  if (existingAddPanel) {
+  const existingOperationPanel = promptPanel.querySelector('.prompt-add-panel, .prompt-variable-panel');
+  if (existingOperationPanel) {
     showNotification(t('completeOrCancelEdit'), 'error');
     return;
   }
 
-  const list = document.getElementById('prompt-panel-list');
+  const list = getPanelElement('#prompt-panel-list');
   const searchBox = promptPanel.querySelector('.prompt-panel-search');
 
   const addPanel = document.createElement('div');
   addPanel.className = 'prompt-add-panel';
   addPanel.innerHTML = `
     <div class="prompt-add-header">
-      <button class="prompt-back-btn">${t('back')}</button>
+      <button type="button" class="prompt-back-btn">${t('back')}</button>
       <h4>${editPrompt ? t('editPrompt') : t('addPrompt')}</h4>
     </div>
     <div class="prompt-add-form">
       <div class="prompt-form-group">
         <label>${t('promptName')} ${t('required')}</label>
-        <input type="text" id="add-prompt-name" class="prompt-form-input" placeholder="${t('promptNamePlaceholder')}" value="${editPrompt ? escapeHtml(editPrompt.name) : ''}" />
+        <input type="text" id="add-prompt-name" class="prompt-form-input" placeholder="${t('promptNamePlaceholder')}"  />
       </div>
       <div class="prompt-form-group">
         <label>${t('category')}</label>
-        <input type="text" id="add-prompt-category" class="prompt-form-input" placeholder="${t('categoryPlaceholder')}" value="${editPrompt ? (editPrompt.category || '') : ''}" />
+        <input type="text" id="add-prompt-category" class="prompt-form-input" placeholder="${t('categoryPlaceholder')}"  />
       </div>
       <div class="prompt-form-group">
         <label>${t('promptContent')} ${t('required')}</label>
-        <textarea id="add-prompt-content" class="prompt-form-textarea" placeholder="${t('promptContentPlaceholder')}">${editPrompt ? escapeHtml(editPrompt.content) : ''}</textarea>
+        <div class="variable-highlight-editor">
+          <pre class="variable-highlight-layer" aria-hidden="true"></pre>
+          <textarea id="add-prompt-content" class="prompt-form-textarea" placeholder="${t('promptContentPlaceholder')}"></textarea>
+        </div>
+      </div>
+      <div class="prompt-variable-toolbar">
+        <button type="button" class="prompt-variable-create-btn">${t('markAsVariable')}</button>
+      </div>
+      <div class="prompt-variable-creator" hidden>
+        <label for="panel-variable-name">${t('variableNameLabel')}</label>
+        <input type="text" id="panel-variable-name" class="prompt-form-input prompt-variable-name" placeholder="${t('variableNamePlaceholder')}" />
+        <label for="panel-variable-default">${t('variableDefaultLabel')}</label>
+        <input type="text" id="panel-variable-default" class="prompt-form-input prompt-variable-default" placeholder="${t('variableDefaultPlaceholder')}" />
+        <div class="prompt-variable-preview variable-preview" hidden aria-live="polite"></div>
+        <div class="prompt-variable-creator-actions">
+          <button type="button" class="prompt-variable-cancel-btn">${t('cancel')}</button>
+          <button type="button" class="prompt-variable-confirm-btn">${t('insertVariable')}</button>
+        </div>
       </div>
       <div class="prompt-form-tips">
         ${t('variableTips')}
       </div>
       <div class="prompt-form-actions">
-        <button class="prompt-save-btn">${editPrompt ? t('save') : t('add')}</button>
-        ${editPrompt ? `<button class="prompt-delete-btn">${t('delete')}</button>` : ''}
+        <button type="button" class="prompt-save-btn">${editPrompt ? t('save') : t('add')}</button>
+        ${editPrompt ? `<button type="button" class="prompt-delete-btn">${t('delete')}</button>` : ''}
       </div>
     </div>
   `;
@@ -1432,9 +1380,132 @@ function showAddPromptPanel(editPrompt = null) {
   list.style.display = 'none';
   searchBox.style.display = 'none';
   promptPanel.appendChild(addPanel);
+  const nameInput = addPanel.querySelector('#add-prompt-name');
+  const categoryInput = addPanel.querySelector('#add-prompt-category');
+  const contentTextarea = addPanel.querySelector('#add-prompt-content');
+  if (editPrompt) {
+    nameInput.value = editPrompt.name;
+    categoryInput.value = editPrompt.category || '';
+    contentTextarea.value = VariableUtils.normalizeVariableTokens(editPrompt.content);
+  }
+  const contentHighlight = addPanel.querySelector('.variable-highlight-layer');
+  const variableCreator = addPanel.querySelector('.prompt-variable-creator');
+  const variableNameInput = addPanel.querySelector('.prompt-variable-name');
+  const variableDefaultInput = addPanel.querySelector('.prompt-variable-default');
+  const variablePreview = addPanel.querySelector('.prompt-variable-preview');
+  let pendingSelection = null;
+
+  let highlightFrame = null;
+  let isComposing = false;
+  function updateContentHighlight() {
+    if (highlightFrame !== null || isComposing) return;
+    highlightFrame = window.requestAnimationFrame(() => {
+      highlightFrame = null;
+      if (!contentHighlight.isConnected) return;
+      contentHighlight.innerHTML = renderHighlightedPromptContent(contentTextarea.value);
+      syncContentHighlightScroll();
+    });
+  }
+
+  function syncContentHighlightScroll() {
+    contentHighlight.style.width = `${contentTextarea.clientWidth + 2}px`;
+    contentHighlight.style.height = `${contentTextarea.clientHeight + 2}px`;
+    contentHighlight.scrollTop = contentTextarea.scrollTop;
+    contentHighlight.scrollLeft = contentTextarea.scrollLeft;
+  }
+
+  function updateCreatorPreview() {
+    const markup = renderVariableTag({
+      name: variableNameInput.value,
+      defaultValue: variableDefaultInput.value
+    });
+
+    variablePreview.hidden = !markup;
+    variablePreview.innerHTML = markup;
+  }
+
+  function closeCreator() {
+    variableCreator.hidden = true;
+    variableNameInput.value = '';
+    variableDefaultInput.value = '';
+    updateCreatorPreview();
+    pendingSelection = null;
+  }
+
+  function insertVariable(name = '', defaultValue = '') {
+    const selectionStart = pendingSelection?.start ?? contentTextarea.selectionStart;
+    const selectionEnd = pendingSelection?.end ?? contentTextarea.selectionEnd;
+    const result = VariableUtils.insertVariable(
+      contentTextarea.value,
+      selectionStart,
+      selectionEnd,
+      name,
+      defaultValue
+    );
+
+    if (!result) return false;
+
+    contentTextarea.value = result.content;
+    updateContentHighlight();
+    contentTextarea.focus();
+    contentTextarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+    closeCreator();
+    return true;
+  }
+
+  addPanel.querySelector('.prompt-variable-create-btn').addEventListener('click', () => {
+    const draft = VariableUtils.createVariableDraft(
+      contentTextarea.value,
+      contentTextarea.selectionStart,
+      contentTextarea.selectionEnd
+    );
+
+    pendingSelection = { start: draft.selectionStart, end: draft.selectionEnd };
+    variableNameInput.value = draft.name;
+    variableDefaultInput.value = draft.defaultValue;
+    variableCreator.hidden = false;
+    updateCreatorPreview();
+    (draft.name ? variableDefaultInput : variableNameInput).focus();
+  });
+
+  function confirmVariable() {
+    if (!insertVariable(variableNameInput.value, variableDefaultInput.value)) {
+      variableNameInput.focus();
+    }
+  }
+
+  addPanel.querySelector('.prompt-variable-confirm-btn').addEventListener('click', confirmVariable);
+  addPanel.querySelector('.prompt-variable-cancel-btn').addEventListener('click', closeCreator);
+  contentTextarea.addEventListener('input', updateContentHighlight);
+  contentTextarea.addEventListener('compositionstart', () => { isComposing = true; });
+  contentTextarea.addEventListener('compositionend', () => {
+    isComposing = false;
+    updateContentHighlight();
+  });
+  contentTextarea.addEventListener('scroll', syncContentHighlightScroll);
+  const contentResizeObserver = typeof ResizeObserver !== 'undefined'
+    ? new ResizeObserver(syncContentHighlightScroll)
+    : null;
+  contentResizeObserver?.observe(contentTextarea);
+  const cleanupAddPanel = () => {
+    contentResizeObserver?.disconnect();
+    if (highlightFrame !== null) window.cancelAnimationFrame(highlightFrame);
+    panelCleanupTasks.delete(cleanupAddPanel);
+  };
+  panelCleanupTasks.add(cleanupAddPanel);
+  updateContentHighlight();
+  [variableNameInput, variableDefaultInput].forEach(input => {
+    input.addEventListener('input', updateCreatorPreview);
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') confirmVariable();
+      if (event.key === 'Escape') closeCreator();
+    });
+  });
+
 
   // 綁定返回按鈕
   addPanel.querySelector('.prompt-back-btn').addEventListener('click', () => {
+    cleanupAddPanel();
     addPanel.remove();
     list.style.display = 'block';
     searchBox.style.display = 'block';
@@ -1442,9 +1513,11 @@ function showAddPromptPanel(editPrompt = null) {
 
   // 綁定保存按鈕
   addPanel.querySelector('.prompt-save-btn').addEventListener('click', async () => {
-    const name = document.getElementById('add-prompt-name').value.trim();
-    const category = document.getElementById('add-prompt-category').value.trim();
-    const content = document.getElementById('add-prompt-content').value.trim();
+    const name = getPanelElement('#add-prompt-name').value.trim();
+    const category = getPanelElement('#add-prompt-category').value.trim();
+    const content = VariableUtils.normalizeVariableTokens(
+      getPanelElement('#add-prompt-content').value.trim()
+    );
 
     if (!name || !content) {
       showNotification(t('fillRequired'), 'error');
@@ -1452,41 +1525,24 @@ function showAddPromptPanel(editPrompt = null) {
     }
 
     const prompt = {
-      id: editPrompt ? editPrompt.id : generateId(),
+      ...(editPrompt ? { id: editPrompt.id } : {}),
       name,
       category,
-      content,
-      createdAt: editPrompt ? editPrompt.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      usageCount: editPrompt ? editPrompt.usageCount : 0
+      content
     };
 
     try {
-      const result = await chrome.storage.local.get('prompts');
-      let prompts = result.prompts || [];
-
-      if (editPrompt) {
-        // 更新現有提示詞
-        const index = prompts.findIndex(p => p.id === editPrompt.id);
-        if (index !== -1) {
-          prompts[index] = prompt;
-        }
-      } else {
-        // 新增提示詞
-        prompts.push(prompt);
-      }
-
-      await chrome.storage.local.set({ prompts });
-      promptsData = prompts;
+      await StorageManager.savePrompt(prompt);
+      await loadPromptsData(true);
 
       showNotification(editPrompt ? t('promptUpdated') : t('promptAdded'), 'success');
 
       // 返回列表
+      cleanupAddPanel();
       addPanel.remove();
       list.style.display = 'block';
       searchBox.style.display = 'block';
-      document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
-      bindPromptItemEvents();
+      refreshPromptListForCurrentSearch();
     } catch (error) {
       showNotification(t('saveFailed'), 'error');
     }
@@ -1500,20 +1556,17 @@ function showAddPromptPanel(editPrompt = null) {
       }
 
       try {
-        const result = await chrome.storage.local.get('prompts');
-        const prompts = result.prompts || [];
-        const filtered = prompts.filter(p => p.id !== editPrompt.id);
-        await chrome.storage.local.set({ prompts: filtered });
-        promptsData = filtered;
+        await StorageManager.deletePrompt(editPrompt.id);
+        await loadPromptsData(true);
 
         showNotification(t('promptDeleted'), 'success');
 
         // 返回列表
-        addPanel.remove();
+        cleanupAddPanel();
+      addPanel.remove();
         list.style.display = 'block';
         searchBox.style.display = 'block';
-        document.getElementById('prompt-panel-list').innerHTML = renderPromptList(promptsData);
-        bindPromptItemEvents();
+        refreshPromptListForCurrentSearch();
       } catch (error) {
         showNotification(t('deleteFailed'), 'error');
       }
@@ -1521,158 +1574,95 @@ function showAddPromptPanel(editPrompt = null) {
   }
 
   // 聚焦名稱輸入框
-  setTimeout(() => {
-    document.getElementById('add-prompt-name').focus();
+  window.setTimeout(() => {
+    if (addPanel.isConnected) nameInput.focus();
   }, 100);
-}
-
-/**
- * 生成唯一 ID
- */
-function generateId() {
-  return `prompt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
  * HTML 轉義
  */
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
-
 /**
  * 初始化（帶重試機制）
  */
+function scheduleInitialButtonCreation() {
+  window.setTimeout(() => {
+    buttonInjectionReady = true;
+    ensurePromptPanelHost();
+    retryCreateButton();
+  }, 750);
+}
+
 async function init() {
+  void loadPromptsData().catch(() => {});
+
   // 檢測當前平台
   currentPlatform = detectPlatform();
 
   // 初始化語言設定
   await initLanguage();
 
-  // 等待頁面載入完成
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      retryCreateButton();
-    });
+  // Wait until the host app has completed its initial hydration.
+  if (document.readyState === 'complete') {
+    scheduleInitialButtonCreation();
   } else {
-    retryCreateButton();
+    window.addEventListener('load', scheduleInitialButtonCreation, { once: true });
   }
 }
 
 /**
  * 重試建立按鈕（最多嘗試 10 次）
  */
-function retryCreateButton(attempts = 0) {
-  const maxAttempts = 10;
-  const delay = 1000; // 每次延遲 1000ms（1秒）
-  const platform = currentPlatform || detectPlatform();
-
-  // 先移除舊按鈕（如果存在）
-  const oldButton = document.getElementById('prompt-manager-quick-btn');
-  if (oldButton) {
-    // 檢查按鈕是否在正確位置（不使用固定定位）
-    const isUsingFallback = oldButton.classList.contains('fixed-position');
-
-    if ((platform === PLATFORMS.CLAUDE || platform === PLATFORMS.CHATGPT) && !isUsingFallback) {
-      // 按鈕已經在正確位置（非固定定位），不需要移除和重新創建
-      return;
-    }
-    oldButton.remove();
-  }
-
+function retryCreateButton() {
+  const existing = document.getElementById('prompt-manager-quick-btn');
+  if (existing) return existing;
   createQuickAccessButton();
-
-  // 檢查按鈕是否成功插入到輸入框上方（而不是使用備用方案）
-  const button = document.getElementById('prompt-manager-quick-btn');
-  const isUsingFallback = button && button.classList.contains('fixed-position');
-
-  if (isUsingFallback && attempts < maxAttempts) {
-    // 如果使用了備用方案（固定定位），繼續重試
-    // 只在第一次和最後一次顯示日誌
-    if (attempts === 0) {
-    }
-    setTimeout(() => {
-      retryCreateButton(attempts + 1);
-    }, delay);
-  } else if (button && !isUsingFallback) {
-  } else if (button && isUsingFallback && attempts >= maxAttempts) {
-  } else {
-  }
+  return document.getElementById('prompt-manager-quick-btn');
 }
-
-// 執行初始化
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.prompts || !promptPanel?.isConnected) return;
+  promptsData = Array.isArray(changes.prompts.newValue) ? changes.prompts.newValue : [];
+  promptsLoadPromise = Promise.resolve(promptsData);
+  visiblePromptCount = 100;
+  refreshPromptListForCurrentSearch();
+});
 init();
 
-// 監聽頁面變化（SPA 導航）
+let buttonRecoveryTimer = null;
 let lastUrl = location.href;
-new MutationObserver((mutations) => {
-  const url = location.href;
-  if (url !== lastUrl) {
-    lastUrl = url;
-    // 使用 retryCreateButton 而非 createQuickAccessButton，確保有重試機制
-    // 這樣在 Claude 等 SPA 平台上，即使輸入框還沒加載也能重試
-    retryCreateButton();
-    return;
-  }
-
-  // SPA 平台處理：檢查按鈕是否被移除
-  const button = document.getElementById('prompt-manager-quick-btn');
-  if (!button) {
-    const platform = detectPlatform();
-    if (platform === PLATFORMS.CLAUDE || platform === PLATFORMS.CHATGPT) {
-      setTimeout(() => {
-        const newButton = document.getElementById('prompt-manager-quick-btn');
-        if (!newButton) {
-          retryCreateButton();
-        }
-      }, 500);
-    }
-  }
-}).observe(document.body, { subtree: true, childList: true });
-
-// 平台專用：定期檢查按鈕是否還在，否則重新創建
-// React/SPA 框架可能會重新渲染 DOM，按鈕可能被移除
-const detectedPlatform = detectPlatform();
-if (detectedPlatform === PLATFORMS.CLAUDE || detectedPlatform === PLATFORMS.GROK || detectedPlatform === PLATFORMS.CHATGPT) {
-  let isRecreating = false;
-
-  const platformConfig = {
-    [PLATFORMS.CHATGPT]: {
-      name: 'ChatGPT',
-      containerSelectors: ['#prompt-textarea', 'form[data-type="unified-composer"]']
-    },
-    [PLATFORMS.CLAUDE]: {
-      name: 'Claude',
-      containerSelectors: ['[data-testid="chat-input"]', 'div.flex.flex-col.bg-bg-000']
-    },
-    [PLATFORMS.GROK]: {
-      name: 'Grok',
-      containerSelectors: ['div[contenteditable="true"].tiptap.ProseMirror', '.query-bar']
-    }
-  };
-
-  const config = platformConfig[detectedPlatform];
-
-  setInterval(() => {
-    if (isRecreating) return;
-
-    const button = document.getElementById('prompt-manager-quick-btn');
-    if (!button) {
-      isRecreating = true;
-
-      setTimeout(() => {
-        const containerExists = config.containerSelectors.some(selector =>
-          document.querySelector(selector)
-        );
-
-        if (containerExists) {
-          retryCreateButton();
-        }
-        isRecreating = false;
-      }, 2000);
-    }
-  }, 3000);
+function scheduleButtonRecovery(delay = 250) {
+  if (buttonRecoveryTimer !== null) return;
+  buttonRecoveryTimer = window.setTimeout(() => {
+    buttonRecoveryTimer = null;
+    if (!buttonInjectionReady) return;
+    if (location.href !== lastUrl) lastUrl = location.href;
+    ensurePromptPanelHost();
+    const button = document.getElementById('prompt-manager-quick-btn') || retryCreateButton();
+    if (button?.isConnected) positionComposerOverlayButton(button);
+  }, delay);
 }
+
+const buttonRecoveryObserver = new MutationObserver(() => {
+  if (location.href !== lastUrl ||
+      !document.getElementById('prompt-manager-quick-btn') ||
+      !document.getElementById('ai-prompts-plus-panel-host')) {
+    scheduleButtonRecovery();
+  }
+});
+buttonRecoveryObserver.observe(document.body, { subtree: true, childList: true });
+const buttonRecoveryInterval = window.setInterval(scheduleButtonRecovery, 750);
+window.addEventListener('pagehide', () => {
+  buttonRecoveryObserver.disconnect();
+  window.clearInterval(buttonRecoveryInterval);
+  if (buttonRecoveryTimer !== null) window.clearTimeout(buttonRecoveryTimer);
+  panelCleanupTasks.forEach(cleanup => cleanup());
+  panelCleanupTasks.clear();
+}, { once: true });

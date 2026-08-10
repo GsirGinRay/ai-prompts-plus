@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI 提示詞+",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "AI投資學院+ 推薦工具｜支援 ChatGPT、Claude、Gemini、Grok 的提示詞管理工具，支援變數替換、快速插入、雙語介面",
   "icons": {
     "16": "icons/icon16.png",
@@ -37,11 +37,24 @@
         "https://grok.com/*",
         "https://*.grok.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["variable-utils.js", "panel-utils.js", "storage.js", "content.js"],
       "css": ["content.css"]
     }
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["content.css"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*",
+        "https://*.claude.ai/*",
+        "https://grok.com/*",
+        "https://*.grok.com/*"
+      ]
+    }
+  ]
 }

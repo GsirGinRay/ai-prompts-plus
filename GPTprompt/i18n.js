@@ -32,7 +32,7 @@ const I18n = {
       promptCategory: '分類/標籤',
       promptCategoryPlaceholder: '例如：寫作、行銷、程式設計',
       promptContent: '提示詞內容',
-      promptContentPlaceholder: '輸入提示詞內容，使用 [變數名稱] 格式標記變數\n例如：請幫我撰寫關於 [主題] 的文章...',
+      promptContentPlaceholder: '輸入提示詞內容...',
       required: '*',
 
       // 模態框標題
@@ -41,8 +41,14 @@ const I18n = {
       fillVariablesTitle: '填寫變數',
 
       // 提示訊息
-      variableHint: '💡 使用 [變數名稱] 來標記可替換的內容',
+      variableHint: '選取內容後按「設為變數」；既有的 [變數名稱] 也會自動辨識。',
       quickInsertVars: '快速插入變數：',
+      markAsVariable: '＋ 設為變數',
+      insertVariable: '加入變數',
+      variableNameLabel: '變數名稱',
+      variableDefaultLabel: '預設內容（選填）',
+      variableNamePlaceholder: '變數名稱，例如：主題',
+      variableDefaultPlaceholder: '預設內容（選填）',
       emptyStateTitle: '尚無提示詞模板',
       emptyStateHint: '點擊上方「新增提示詞」開始使用',
 
@@ -98,7 +104,7 @@ const I18n = {
       promptCategory: 'Category/Tags',
       promptCategoryPlaceholder: 'e.g., Writing, Marketing, Programming',
       promptContent: 'Prompt Content',
-      promptContentPlaceholder: 'Enter prompt content, use [variable_name] format for variables\ne.g., Write an article about [topic]...',
+      promptContentPlaceholder: 'Enter your prompt...',
       required: '*',
 
       // Modal Titles
@@ -107,8 +113,14 @@ const I18n = {
       fillVariablesTitle: 'Fill Variables',
 
       // Hints
-      variableHint: '💡 Use [variable_name] to mark replaceable content',
+      variableHint: 'Select text, then click “Make variable”. Existing [variables] are recognized automatically.',
       quickInsertVars: 'Quick Insert Variables:',
+      markAsVariable: '+ Make variable',
+      insertVariable: 'Add variable',
+      variableNameLabel: 'Variable name',
+      variableDefaultLabel: 'Default content (optional)',
+      variableNamePlaceholder: 'Variable name, e.g. topic',
+      variableDefaultPlaceholder: 'Default content (optional)',
       emptyStateTitle: 'No prompt templates yet',
       emptyStateHint: 'Click "Add Prompt" above to get started',
 

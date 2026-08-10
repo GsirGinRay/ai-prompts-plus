@@ -23,6 +23,10 @@ const loadDefaultBtn = document.getElementById('loadDefaultBtn');
 // 當前編輯的提示詞 ID
 let currentEditingId = null;
 let currentInsertingPrompt = null;
+let pendingVariableSelection = null;
+let promptHighlightFrame = null;
+let promptInputComposing = false;
+let promptResizeObserver = null;
 
 /**
  * 初始化
@@ -44,40 +48,130 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function initializeDefaultPrompts() {
   try {
-    const result = await chrome.storage.local.get(['prompts', 'defaultPromptsLoaded']);
+    const settings = await chrome.storage.local.get('defaultPromptsLoaded');
+    const existingPrompts = await StorageManager.getAllPrompts();
+    if (settings.defaultPromptsLoaded || existingPrompts.length > 0) return;
 
-    // 如果已經載入過預設提示詞，或者已經有提示詞了，就不再載入
-    if (result.defaultPromptsLoaded || (result.prompts && result.prompts.length > 0)) {
-      return;
-    }
-
-    // 根據當前語言獲取對應的預設提示詞
     const defaultPrompts = DefaultPrompts.getDefaultPrompts(I18n.currentLang);
-
-    // 儲存預設提示詞
-    await chrome.storage.local.set({
-      prompts: defaultPrompts,
-      defaultPromptsLoaded: true
-    });
-
+    await StorageManager.importPrompts(JSON.stringify({ prompts: defaultPrompts }), true);
+    await chrome.storage.local.set({ defaultPromptsLoaded: true });
   } catch (error) {
-    // 靜默處理
+    console.error('Unable to initialize default prompts:', error);
   }
 }
 
 /**
  * 插入變數到文字區域
  */
-function insertVariableToTextarea(varKey) {
-  const varName = I18n.t(varKey);
-  const textarea = document.getElementById('promptContent');
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const text = textarea.value;
+function closeVariableCreator() {
+  const creator = document.getElementById('variableCreator');
+  creator.hidden = true;
+  document.getElementById('variableName').value = '';
+  document.getElementById('variableDefault').value = '';
+  updateVariableCreatorPreview();
+  pendingVariableSelection = null;
+}
 
-  textarea.value = text.substring(0, start) + `[${varName}]` + text.substring(end);
+function renderHighlightedPromptContent(content) {
+  const parts = VariableUtils.createHighlightedContentParts(content);
+  const markup = parts.map(part => {
+    if (part.type === 'text') return escapeHtml(part.text);
+    return `<span class="variable-token-${part.type}">${escapeHtml(part.text)}</span>`;
+  }).join('');
+
+  return markup + (content.endsWith('\n') ? ' ' : '');
+}
+
+function updatePromptContentHighlight() {
+  if (promptHighlightFrame !== null || promptInputComposing) return;
+  promptHighlightFrame = requestAnimationFrame(() => {
+    promptHighlightFrame = null;
+    const textarea = document.getElementById('promptContent');
+    const highlight = document.getElementById('promptContentHighlight');
+    highlight.innerHTML = renderHighlightedPromptContent(textarea.value);
+    syncPromptContentHighlightScroll();
+  });
+}
+
+function syncPromptContentHighlightScroll() {
+  const textarea = document.getElementById('promptContent');
+  const highlight = document.getElementById('promptContentHighlight');
+  highlight.style.width = `${textarea.clientWidth + 2}px`;
+  highlight.style.height = `${textarea.clientHeight + 2}px`;
+  highlight.scrollTop = textarea.scrollTop;
+  highlight.scrollLeft = textarea.scrollLeft;
+}
+
+function renderVariableTag(variable) {
+  const parts = VariableUtils.createVariableDisplayParts(variable);
+  const label = parts.map(part => part.text).join('');
+
+  if (!parts.length) return '';
+
+  return `
+    <span class="variable-tag" aria-label="${escapeHtml(label)}">
+      ${parts.map(part => `<span class="variable-token-${part.type}">${escapeHtml(part.text)}</span>`).join('')}
+    </span>
+  `;
+}
+
+function updateVariableCreatorPreview() {
+  const preview = document.getElementById('variablePreview');
+  const name = document.getElementById('variableName').value;
+  const defaultValue = document.getElementById('variableDefault').value;
+  const markup = renderVariableTag({ name, defaultValue });
+
+  preview.hidden = !markup;
+  preview.innerHTML = markup;
+}
+
+function insertVariableToTextarea(name = '', defaultValue = '') {
+  const textarea = document.getElementById('promptContent');
+  const selectionStart = pendingVariableSelection?.start ?? textarea.selectionStart;
+  const selectionEnd = pendingVariableSelection?.end ?? textarea.selectionEnd;
+  const result = VariableUtils.insertVariable(
+    textarea.value,
+    selectionStart,
+    selectionEnd,
+    name,
+    defaultValue
+  );
+
+  if (!result) return false;
+
+  textarea.value = result.content;
+  updatePromptContentHighlight();
   textarea.focus();
-  textarea.selectionStart = textarea.selectionEnd = start + varName.length + 2;
+  textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
+  closeVariableCreator();
+  return true;
+}
+
+function handleMarkVariable() {
+  const textarea = document.getElementById('promptContent');
+  const nameInput = document.getElementById('variableName');
+  const defaultInput = document.getElementById('variableDefault');
+  const draft = VariableUtils.createVariableDraft(
+    textarea.value,
+    textarea.selectionStart,
+    textarea.selectionEnd
+  );
+
+  pendingVariableSelection = { start: draft.selectionStart, end: draft.selectionEnd };
+  nameInput.value = draft.name;
+  defaultInput.value = draft.defaultValue;
+  document.getElementById('variableCreator').hidden = false;
+  updateVariableCreatorPreview();
+  (draft.name ? defaultInput : nameInput).focus();
+}
+
+function confirmVariableCreation() {
+  const nameInput = document.getElementById('variableName');
+  const defaultValue = document.getElementById('variableDefault').value;
+
+  if (!insertVariableToTextarea(nameInput.value, defaultValue)) {
+    nameInput.focus();
+  }
 }
 
 /**
@@ -105,10 +199,31 @@ function setupEventListeners() {
   // 儲存提示詞
   saveBtn.addEventListener('click', handleSavePrompt);
 
-  // 快速插入變數按鈕
-  document.querySelectorAll('.var-btn').forEach(btn => {
-    btn.addEventListener('click', () => insertVariableToTextarea(btn.dataset.varKey));
+  document.getElementById('markVariableBtn').addEventListener('click', handleMarkVariable);
+  document.getElementById('confirmVariableCreation').addEventListener('click', confirmVariableCreation);
+  document.getElementById('cancelVariableCreation').addEventListener('click', closeVariableCreator);
+  document.getElementById('variableName').addEventListener('keydown', event => {
+    if (event.key === 'Enter') confirmVariableCreation();
+    if (event.key === 'Escape') closeVariableCreator();
   });
+  document.getElementById('variableDefault').addEventListener('keydown', event => {
+    if (event.key === 'Enter') confirmVariableCreation();
+    if (event.key === 'Escape') closeVariableCreator();
+  });
+  document.getElementById('variableName').addEventListener('input', updateVariableCreatorPreview);
+  document.getElementById('variableDefault').addEventListener('input', updateVariableCreatorPreview);
+  const promptContent = document.getElementById('promptContent');
+  promptContent.addEventListener('input', updatePromptContentHighlight);
+  promptContent.addEventListener('compositionstart', () => { promptInputComposing = true; });
+  promptContent.addEventListener('compositionend', () => {
+    promptInputComposing = false;
+    updatePromptContentHighlight();
+  });
+  promptContent.addEventListener('scroll', syncPromptContentHighlightScroll);
+  if (typeof ResizeObserver !== 'undefined') {
+    promptResizeObserver = new ResizeObserver(syncPromptContentHighlightScroll);
+    promptResizeObserver.observe(promptContent);
+  }
 
   // 匯出/匯入
   exportBtn.addEventListener('click', handleExport);
@@ -178,22 +293,21 @@ async function handleLoadDefaultPrompts() {
   }
 
   try {
-    const result = await chrome.storage.local.get('prompts');
-    const existingPrompts = result.prompts || [];
+    const existingPrompts = await StorageManager.getAllPrompts();
     const defaultPrompts = DefaultPrompts.getDefaultPrompts(loadLang);
 
-    const existingIds = new Set(existingPrompts.map(p => p.id));
-    const newPrompts = defaultPrompts.filter(p => !existingIds.has(p.id));
+    const existingKeys = new Set(existingPrompts.map(prompt => `${prompt.name}\u0000${prompt.content}`));
+    const newPrompts = defaultPrompts.filter(prompt =>
+      !existingKeys.has(`${prompt.name}\u0000${prompt.content}`)
+    );
 
     if (newPrompts.length === 0) {
       alert(getLocalizedMessage('所有預設提示詞都已經存在了！', 'All default prompts already exist!'));
       return;
     }
 
-    await chrome.storage.local.set({
-      prompts: [...existingPrompts, ...newPrompts],
-      defaultPromptsLoaded: true
-    });
+    await StorageManager.importPrompts(JSON.stringify({ prompts: newPrompts }), true);
+    await chrome.storage.local.set({ defaultPromptsLoaded: true });
 
     await loadPrompts(searchInput.value);
     alert(getLocalizedMessage(
@@ -247,7 +361,7 @@ function createPromptCard(prompt) {
   card.className = 'prompt-card';
   card.dataset.id = prompt.id;
 
-  const variables = StorageManager.extractVariables(prompt.content);
+  const variables = VariableUtils.parseVariables(prompt.content);
 
   card.innerHTML = `
     <div class="prompt-card-header">
@@ -273,7 +387,7 @@ function createPromptCard(prompt) {
     <div class="prompt-card-content">${escapeHtml(prompt.content)}</div>
     ${variables.length > 0 ? `
       <div class="prompt-card-footer">
-        ${variables.map(v => `<span class="variable-tag">[${escapeHtml(v)}]</span>`).join('')}
+        ${variables.map(renderVariableTag).join('')}
       </div>
     ` : ''}
   `;
@@ -307,11 +421,15 @@ function openEditModal(prompt = null) {
   currentEditingId = prompt ? prompt.id : null;
 
   document.getElementById('modalTitle').textContent = prompt ? I18n.t('editPromptTitle') : I18n.t('addPromptTitle');
+  closeVariableCreator();
   document.getElementById('promptName').value = prompt ? prompt.name : '';
   document.getElementById('promptCategory').value = prompt ? (prompt.category || '') : '';
-  document.getElementById('promptContent').value = prompt ? prompt.content : '';
+  document.getElementById('promptContent').value = prompt
+    ? VariableUtils.normalizeVariableTokens(prompt.content)
+    : '';
 
   editModal.style.display = 'flex';
+  updatePromptContentHighlight();
   document.getElementById('promptName').focus();
 }
 
@@ -319,6 +437,7 @@ function openEditModal(prompt = null) {
  * 關閉編輯模態框
  */
 function closeEditModal() {
+  closeVariableCreator();
   editModal.style.display = 'none';
   currentEditingId = null;
 }
@@ -337,7 +456,9 @@ function closeVariableModalFunc() {
 async function handleSavePrompt() {
   const name = document.getElementById('promptName').value.trim();
   const category = document.getElementById('promptCategory').value.trim();
-  const content = document.getElementById('promptContent').value.trim();
+  const content = VariableUtils.normalizeVariableTokens(
+    document.getElementById('promptContent').value.trim()
+  );
 
   if (!name || !content) {
     alert(I18n.t('fillRequired'));
@@ -383,12 +504,12 @@ async function deletePrompt(id) {
  * 使用提示詞
  */
 async function usePrompt(prompt) {
-  const variables = StorageManager.extractVariables(prompt.content);
+  const variables = VariableUtils.parseVariables(prompt.content);
 
   if (variables.length === 0) {
     // 沒有變數，直接插入
-    await insertToPage(prompt.content);
-    await StorageManager.incrementUsageCount(prompt.id);
+    const inserted = await insertToPage(prompt.content);
+    if (inserted) await StorageManager.incrementUsageCount(prompt.id);
   } else {
     // 有變數，顯示輸入框
     currentInsertingPrompt = prompt;
@@ -403,19 +524,28 @@ function showVariableModal(variables) {
   const container = document.getElementById('variableInputs');
   container.innerHTML = '';
 
-  variables.forEach(variable => {
+  variables.forEach((variable, index) => {
     const div = document.createElement('div');
     div.className = 'form-group';
-    div.innerHTML = `
-      <label for="var-${variable}">${escapeHtml(variable)}</label>
-      <input type="text" id="var-${variable}" data-variable="${variable}" placeholder="${I18n.t('enterVariable', { variable: escapeHtml(variable) })}" />
-    `;
+
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `var-${index}`;
+    input.dataset.variable = variable.name;
+    input.dataset.defaultValue = variable.defaultValue || '';
+    input.placeholder = I18n.t('enterVariable', { variable: variable.name });
+    input.value = variable.defaultValue || '';
+    label.htmlFor = input.id;
+    label.textContent = variable.name;
+
+    div.append(label, input);
     container.appendChild(div);
   });
 
   // 功能1：使用事件委託，在 container 上監聽 Enter 鍵
   container.onkeydown = function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleInsertPrompt();
     }
@@ -433,23 +563,24 @@ async function handleInsertPrompt() {
   if (!currentInsertingPrompt) return;
 
   const inputs = document.querySelectorAll('#variableInputs input');
-  const values = {};
+  const values = new Map();
 
   for (const input of inputs) {
     const variable = input.dataset.variable;
     const value = input.value.trim();
-    if (!value) {
+    const defaultValue = input.dataset.defaultValue;
+    if (!value && !defaultValue) {
       alert(I18n.t('fillVariable', { variable }));
       input.focus();
       return;
     }
-    values[variable] = value;
+    values.set(variable, value || defaultValue);
   }
 
   const finalContent = StorageManager.replaceVariables(currentInsertingPrompt.content, values);
-  await insertToPage(finalContent);
+  const inserted = await insertToPage(finalContent);
+  if (!inserted) return;
   await StorageManager.incrementUsageCount(currentInsertingPrompt.id);
-
   closeVariableModalFunc();
 }
 
@@ -463,8 +594,9 @@ function copyWithFallback(content) {
   textarea.style.opacity = '0';
   document.body.appendChild(textarea);
   textarea.select();
-  document.execCommand('copy');
+  const copied = document.execCommand('copy');
   document.body.removeChild(textarea);
+  return copied;
 }
 
 /**
@@ -472,18 +604,18 @@ function copyWithFallback(content) {
  */
 async function insertToPage(content) {
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(content);
-    } else {
-      copyWithFallback(content);
+    } else if (!copyWithFallback(content)) {
+      throw new Error('Clipboard copy failed.');
     }
-
     showCopySuccess(getLocalizedMessage('已複製到剪貼簿！', 'Copied to clipboard!'));
+    return true;
   } catch (error) {
     alert(getLocalizedMessage('複製失敗，請重試', 'Copy failed, please try again'));
+    return false;
   }
 }
-
 /**
  * 顯示複製成功提示
  */
@@ -536,6 +668,11 @@ async function handleExport() {
 async function handleImport(e) {
   const file = e.target.files[0];
   if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert(I18n.t('importFailed'));
+    fileInput.value = '';
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = async (event) => {
@@ -570,7 +707,15 @@ function debounce(func, wait) {
  * HTML 轉義
  */
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
+
+window.addEventListener('unload', () => {
+  promptResizeObserver?.disconnect();
+  if (promptHighlightFrame !== null) cancelAnimationFrame(promptHighlightFrame);
+});
