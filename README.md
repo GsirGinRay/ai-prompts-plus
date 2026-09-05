@@ -22,6 +22,16 @@ AI 提示詞+ 是一款支援 ChatGPT、Claude、Google Gemini 與 Grok 的 Chro
 - 不會自動按下 AI 平台送出鍵，由使用者檢查後手動送出
 - 提供繁體中文與英文介面
 
+### 完整提示詞庫（可匯入）
+
+下載完整 JSON 後，在擴充功能中使用「匯入」：
+
+- 檔案：[\library/ai-prompts-plus-full.json\](./library/ai-prompts-plus-full.json)
+- Raw：https://raw.githubusercontent.com/GsirGinRay/ai-prompts-plus/master/library/ai-prompts-plus-full.json
+
+此檔為外掛匯入格式（version / exportedAt / prompts），可直接一鍵匯入。內容會隨社群精選更新。
+
+
 ### 使用方式
 
 1. 點擊擴充功能圖示，建立一則提示詞。
