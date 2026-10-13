@@ -122,7 +122,7 @@ test('promotion link suppresses opener and referrer data', () => {
 
 test('manifest keeps the minimal permission and exposes only local panel CSS', () => {
   assert.deepEqual(manifest.permissions, ['storage']);
-  assert.equal(manifest.version, '2.0.7');
+  assert.equal(manifest.version, '2.0.9');
   assert.deepEqual(manifest.web_accessible_resources[0].resources, ['content.css']);
   assert.ok(manifest.content_scripts[0].js.includes('storage.js'));
 });

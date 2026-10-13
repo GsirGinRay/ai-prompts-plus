@@ -66,6 +66,7 @@ const I18n = {
       deleteFailed: '刪除失敗，請重試',
       exportFailed: '匯出失敗，請重試',
       importSuccess: '成功匯入 {count} 個提示詞',
+      libraryImportSuccess: '官方提示詞更新完成：新增 {added}、更新 {updated}、已是最新版 {unchanged}',
       importFailed: '匯入失敗，請確認檔案格式正確',
       insertFailed: '插入失敗，請確保您在 AI 對話頁面',
       notChatGPTPage: '請在 AI 對話頁面使用此功能',
@@ -138,6 +139,7 @@ const I18n = {
       deleteFailed: 'Delete failed, please try again',
       exportFailed: 'Export failed, please try again',
       importSuccess: 'Successfully imported {count} prompt(s)',
+      libraryImportSuccess: 'Official library updated: {added} added, {updated} updated, {unchanged} already current',
       importFailed: 'Import failed, please check file format',
       insertFailed: 'Insert failed, please ensure you are on an AI conversation page',
       notChatGPTPage: 'Please use this feature on an AI conversation page',
@@ -223,4 +225,3 @@ const I18n = {
   },
 
 };
-

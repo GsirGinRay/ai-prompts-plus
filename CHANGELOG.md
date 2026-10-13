@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2026-08-28
+
+### Fixed
+- Increase the package version above the previously uploaded 2.0.8 release.
+- Reject release builds whose manifest version is not newer than the supplied Web Store version.
+
+## [2.0.8] - 2026-08-28
+
+### Fixed
+- Include `prompt-store.js` in every Chrome Web Store release package so the background service worker starts correctly.
+- Stop prompt panel loading from waiting indefinitely when the background service is unavailable.
+
+### Added
+- Validate manifest and `importScripts()` dependencies in the final ZIP before release.
+- Support idempotent updates from the official prompt library format.
+
 ## [2.0.7] - 2026-08-10
 
 ### Added

@@ -678,7 +678,8 @@ async function handleImport(e) {
   reader.onload = async (event) => {
     try {
       const result = await StorageManager.importPrompts(event.target.result, true);
-      alert(I18n.t('importSuccess', { count: result.count }));
+      const messageKey = result.libraryId ? 'libraryImportSuccess' : 'importSuccess';
+      alert(I18n.t(messageKey, result));
       await loadPrompts();
       fileInput.value = ''; // 清空文件輸入
     } catch (error) {

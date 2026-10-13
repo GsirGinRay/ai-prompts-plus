@@ -2,7 +2,7 @@
 
 **AI 投資學院+ 官方推薦工具 / Recommended by AI Investment Academy+**
 
-Version 2.0.7
+Version 2.0.9
 
 [繁體中文](#繁體中文) · [English](#english) · [Privacy Policy](#privacy-policy)
 
@@ -117,6 +117,17 @@ AI Prompts+ has one purpose: helping users create, manage, and insert prompt tem
 Questions may be submitted through [GitHub Issues](https://github.com/GsirGinRay/ai-prompts-plus/issues).
 
 ## Changelog / 更新日誌
+
+### v2.0.9 — 2026-08-28
+
+- Bumped the release version above the previously uploaded 2.0.8 package.
+- Added a local minimum-version guard to prevent rejected Web Store uploads.
+
+### v2.0.8 — 2026-08-28
+
+- Fixed the Chrome Web Store release package so the background prompt store is always included.
+- Added release-package dependency validation and a background response timeout.
+- Added official prompt library update support.
 
 ### v2.0.7 — 2026-08-10
 

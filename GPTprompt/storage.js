@@ -1,9 +1,23 @@
 /** Chrome Storage facade. Prompt collection writes are serialized by background.js. */
+const PROMPT_REQUEST_TIMEOUT_MS = 5000;
+
 const StorageManager = {
   async request(action, payload = {}) {
-    const response = await chrome.runtime.sendMessage({ action, payload });
-    if (!response?.success) throw new Error(response?.error || 'Prompt operation failed.');
-    return response.data;
+    let timeoutId;
+    try {
+      const response = await Promise.race([
+        chrome.runtime.sendMessage({ action, payload }),
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Prompt background service did not respond.'));
+          }, PROMPT_REQUEST_TIMEOUT_MS);
+        })
+      ]);
+      if (!response?.success) throw new Error(response?.error || 'Prompt operation failed.');
+      return response.data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   },
 
   async getAllPrompts() {
@@ -40,7 +54,7 @@ const StorageManager = {
   async exportPrompts() {
     const prompts = await this.getAllPrompts();
     return JSON.stringify({
-      version: '2.0.7',
+      version: '2.0.9',
       exportedAt: new Date().toISOString(),
       prompts
     }, null, 2);
