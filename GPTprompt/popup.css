@@ -5,8 +5,8 @@
 }
 
 :root {
-  --primary-color: #10a37f;
-  --primary-hover: #0d8c6a;
+  --primary-color: #000000;
+  --primary-hover: #374151;
   --danger-color: #ef4444;
   --danger-hover: #dc2626;
   --bg-primary: #ffffff;
@@ -212,6 +212,31 @@ body {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+}
+
+.prompt-card-content.is-expanded {
+  max-height: none;
+  display: block;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.card-expand-btn {
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.card-expand-btn:hover {
+  color: var(--text-secondary);
 }
 
 .prompt-card-footer {
@@ -577,4 +602,85 @@ body {
 .copy-toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* 分類篩選與排序 */
+.list-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.category-chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  max-height: 64px;
+  overflow-y: auto;
+}
+
+.category-chips[hidden] {
+  display: none;
+}
+
+.category-chip {
+  padding: 4px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-chip:hover {
+  background: var(--bg-secondary);
+}
+
+.category-chip[aria-pressed="true"] {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.sort-select {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* 在新分頁開啟的完整管理頁 */
+body.page-view {
+  width: auto;
+  max-height: none;
+  min-height: 100vh;
+}
+
+body.page-view .container {
+  max-width: 1080px;
+  height: 100vh;
+  max-height: none;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+}
+
+body.page-view #openInTabBtn {
+  display: none;
+}
+
+body.page-view .modal-content {
+  max-width: 860px;
+  width: calc(100% - 48px);
 }

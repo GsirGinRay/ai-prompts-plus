@@ -93,3 +93,96 @@ test('imports wrapped export data and generates fresh IDs atomically', () => {
   assert.equal(operation.prompts[0].importedAt, '2026-08-09T00:00:00.000Z');
   assert.deepEqual(operation.result, { success: true, count: 1 });
 });
+
+function createOfficialLibrary(prompts, version = '2026.08.28') {
+  return JSON.stringify({
+    format: 'ai-prompts-plus-library',
+    schemaVersion: 1,
+    library: { id: 'skool-prompts', version },
+    prompts
+  });
+}
+
+test('official library imports use stable source IDs and do not duplicate', () => {
+  const jsonData = createOfficialLibrary([{
+    sourceId: 'invest-001',
+    name: 'Investment Research',
+    category: 'Investing',
+    content: 'Analyze [ticker]'
+  }]);
+  const first = PromptStore.applyOperation([], 'prompt.import', { jsonData, merge: true }, {
+    now: '2026-08-09T00:00:00.000Z',
+    generateId: () => 'prompt_official'
+  });
+  const second = PromptStore.applyOperation(first.prompts, 'prompt.import', { jsonData, merge: true }, {
+    now: '2026-08-10T00:00:00.000Z',
+    generateId: () => 'must_not_be_used'
+  });
+
+  assert.equal(second.prompts.length, 1);
+  assert.equal(second.prompts[0].sourceId, 'invest-001');
+  assert.equal(second.prompts[0].sourceLibrary, 'skool-prompts');
+  assert.deepEqual(second.result, {
+    success: true,
+    count: 1,
+    added: 0,
+    updated: 0,
+    unchanged: 1,
+    libraryId: 'skool-prompts',
+    libraryVersion: '2026.08.28'
+  });
+});
+
+test('official library updates content while preserving user metadata', () => {
+  const managedPrompt = {
+    ...existingPrompt,
+    sourceLibrary: 'skool-prompts',
+    sourceId: 'invest-001',
+    sourceVersion: '2026.08.01'
+  };
+  const jsonData = createOfficialLibrary([{
+    sourceId: 'invest-001',
+    name: 'Revised',
+    category: 'Investing',
+    content: 'Updated [ticker]'
+  }]);
+  const operation = PromptStore.applyOperation([managedPrompt], 'prompt.import', {
+    jsonData,
+    merge: true
+  }, { now: '2026-08-09T00:00:00.000Z', generateId: () => 'unused' });
+
+  assert.equal(operation.prompts[0].name, 'Revised');
+  assert.equal(operation.prompts[0].usageCount, 9);
+  assert.equal(operation.prompts[0].pinned, true);
+  assert.equal(operation.prompts[0].sourceVersion, '2026.08.28');
+  assert.equal(operation.result.updated, 1);
+});
+
+test('official library adopts an exact legacy prompt instead of duplicating it', () => {
+  const legacyPrompt = { ...existingPrompt, name: 'Legacy', content: 'Same content' };
+  const jsonData = createOfficialLibrary([{
+    sourceId: 'legacy-001',
+    name: 'Legacy',
+    category: 'Work',
+    content: 'Same content'
+  }]);
+  const operation = PromptStore.applyOperation([legacyPrompt], 'prompt.import', {
+    jsonData,
+    merge: true
+  }, { now: '2026-08-09T00:00:00.000Z', generateId: () => 'unused' });
+
+  assert.equal(operation.prompts.length, 1);
+  assert.equal(operation.prompts[0].id, 'prompt_1');
+  assert.equal(operation.prompts[0].sourceId, 'legacy-001');
+});
+
+test('official library rejects duplicate source IDs atomically', () => {
+  const jsonData = createOfficialLibrary([
+    { sourceId: 'duplicate', name: 'One', category: '', content: '1' },
+    { sourceId: 'duplicate', name: 'Two', category: '', content: '2' }
+  ]);
+  assert.throws(() => PromptStore.applyOperation([], 'prompt.import', {
+    jsonData,
+    merge: true
+  }), /Duplicate sourceId/);
+});

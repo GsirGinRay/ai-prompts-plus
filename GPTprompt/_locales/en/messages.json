@@ -4,5 +4,8 @@
   },
   "appDescription": {
     "message": "Cross-platform prompt manager for ChatGPT, Claude, Gemini, and Grok with variables, search, quick insertion, and bilingual UI."
+  },
+  "commandTogglePanel": {
+    "message": "Open or close the prompt panel"
   }
 }

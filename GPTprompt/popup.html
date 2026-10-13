@@ -12,6 +12,14 @@
     <header class="header">
       <h1 data-i18n="appTitle">💬 提示詞管理</h1>
       <div class="header-actions">
+        <button id="openInTabBtn" class="icon-btn" data-i18n-title="openInTab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
         <button id="loadDefaultBtn" class="icon-btn" data-i18n-title="loadDefaultPrompts">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 12h18M3 6h18M3 18h18"></path>
@@ -45,6 +53,16 @@
     <div class="search-bar">
       <input type="text" id="searchInput" data-i18n-placeholder="searchPlaceholder" placeholder="搜尋提示詞..." />
       <button id="addPromptBtn" class="btn-primary" data-i18n="addPrompt">+ 新增提示詞</button>
+    </div>
+
+    <!-- 分類篩選與排序 -->
+    <div class="list-toolbar">
+      <div id="categoryChips" class="category-chips" role="group"></div>
+      <select id="sortSelect" class="sort-select" data-i18n-title="sortLabel">
+        <option value="usage" data-i18n="sortUsage">最常使用</option>
+        <option value="recent" data-i18n="sortRecent">最近使用</option>
+        <option value="name" data-i18n="sortName">名稱</option>
+      </select>
     </div>
 
     <!-- 提示詞列表 -->
@@ -133,6 +151,8 @@
   <input type="file" id="fileInput" accept=".json" style="display: none;" />
 
   <script src="variable-utils.js"></script>
+  <script src="panel-utils.js"></script>
+  <script src="prompt-utils.js"></script>
   <script src="storage.js"></script>
   <script src="i18n.js"></script>
   <script src="default-prompts.js"></script>

@@ -51,6 +51,17 @@ const I18n = {
       variableDefaultPlaceholder: '預設內容（選填）',
       emptyStateTitle: '尚無提示詞模板',
       emptyStateHint: '點擊上方「新增提示詞」開始使用',
+      expandContent: '展開全文',
+      collapseContent: '收合',
+      allCategories: '全部',
+      sortLabel: '排序',
+      sortUsage: '最常使用',
+      sortRecent: '最近使用',
+      sortName: '名稱',
+      duplicate: '建立副本',
+      copySuffix: '（副本）',
+      duplicateFailed: '建立副本失敗，請重試',
+      openInTab: '在新分頁開啟完整管理頁',
 
       // 變數按鈕
       varTopic: '主題',
@@ -66,6 +77,7 @@ const I18n = {
       deleteFailed: '刪除失敗，請重試',
       exportFailed: '匯出失敗，請重試',
       importSuccess: '成功匯入 {count} 個提示詞',
+      libraryImportSuccess: '官方提示詞更新完成：新增 {added}、更新 {updated}、已是最新版 {unchanged}',
       importFailed: '匯入失敗，請確認檔案格式正確',
       insertFailed: '插入失敗，請確保您在 AI 對話頁面',
       notChatGPTPage: '請在 AI 對話頁面使用此功能',
@@ -123,6 +135,17 @@ const I18n = {
       variableDefaultPlaceholder: 'Default content (optional)',
       emptyStateTitle: 'No prompt templates yet',
       emptyStateHint: 'Click "Add Prompt" above to get started',
+      expandContent: 'Show full text',
+      collapseContent: 'Collapse',
+      allCategories: 'All',
+      sortLabel: 'Sort',
+      sortUsage: 'Most used',
+      sortRecent: 'Recently used',
+      sortName: 'Name',
+      duplicate: 'Duplicate',
+      copySuffix: ' (copy)',
+      duplicateFailed: 'Failed to duplicate, please try again',
+      openInTab: 'Open the full manager in a new tab',
 
       // Variable Buttons
       varTopic: 'topic',
@@ -138,6 +161,7 @@ const I18n = {
       deleteFailed: 'Delete failed, please try again',
       exportFailed: 'Export failed, please try again',
       importSuccess: 'Successfully imported {count} prompt(s)',
+      libraryImportSuccess: 'Official library updated: {added} added, {updated} updated, {unchanged} already current',
       importFailed: 'Import failed, please check file format',
       insertFailed: 'Insert failed, please ensure you are on an AI conversation page',
       notChatGPTPage: 'Please use this feature on an AI conversation page',
@@ -223,4 +247,3 @@ const I18n = {
   },
 
 };
-

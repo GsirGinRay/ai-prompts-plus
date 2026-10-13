@@ -9,6 +9,9 @@
     contentLength: 100000
   });
 
+  const OFFICIAL_LIBRARY_FORMAT = 'ai-prompts-plus-library';
+  const OFFICIAL_LIBRARY_SCHEMA_VERSION = 1;
+
   function byteLength(value) {
     const text = typeof value === 'string' ? value : JSON.stringify(value);
     if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(text).byteLength;
@@ -51,7 +54,7 @@
     return sanitized;
   }
 
-  function parseImportJson(jsonText) {
+  function parseImportPayload(jsonText) {
     if (typeof jsonText !== 'string') throw new TypeError('Import source must be text.');
     if (byteLength(jsonText) > LIMITS.importBytes) {
       throw new RangeError('Import file exceeds 5 MiB.');
@@ -63,7 +66,40 @@
       throw new TypeError('Import file is not valid JSON.');
     }
     const records = Array.isArray(data) ? data : data?.prompts;
-    return validateImportData(records);
+    const prompts = validateImportData(records);
+    const isOfficialLibrary = data?.format === OFFICIAL_LIBRARY_FORMAT;
+
+    if (!isOfficialLibrary) return { prompts, library: null };
+    if (data.schemaVersion !== OFFICIAL_LIBRARY_SCHEMA_VERSION) {
+      throw new TypeError('Unsupported official prompt library schema version.');
+    }
+    if (!data.library || typeof data.library !== 'object') {
+      throw new TypeError('Official prompt library metadata is required.');
+    }
+
+    const libraryId = assertStringField(data.library, 'id', 200, 0).trim();
+    const libraryVersion = assertStringField(data.library, 'version', 100, 0).trim();
+    if (!libraryId || !libraryVersion) {
+      throw new TypeError('Official prompt library id and version must not be empty.');
+    }
+
+    const sourceIds = new Set();
+    const officialPrompts = prompts.map((prompt, index) => {
+      const sourceId = assertStringField(records[index], 'sourceId', 200, index).trim();
+      if (!sourceId) throw new TypeError(`Prompt ${index + 1} sourceId must not be empty.`);
+      if (sourceIds.has(sourceId)) throw new TypeError(`Duplicate sourceId: ${sourceId}`);
+      sourceIds.add(sourceId);
+      return { ...prompt, sourceId };
+    });
+
+    return {
+      prompts: officialPrompts,
+      library: { id: libraryId, version: libraryVersion }
+    };
+  }
+
+  function parseImportJson(jsonText) {
+    return parseImportPayload(jsonText).prompts;
   }
 
   function validateImportData(records) {
@@ -99,6 +135,85 @@
       category: editable.category,
       content: editable.content,
       updatedAt: now
+    };
+  }
+
+  function importOfficialLibrary(current, imported, library, now, generateId) {
+    const claimedIndexes = new Set();
+    let added = 0;
+    let updated = 0;
+    let unchanged = 0;
+    const nextPrompts = [...current];
+
+    for (const prompt of imported) {
+      let index = nextPrompts.findIndex((existing, existingIndex) =>
+        !claimedIndexes.has(existingIndex) &&
+        existing.sourceLibrary === library.id &&
+        existing.sourceId === prompt.sourceId
+      );
+
+      if (index === -1) {
+        index = nextPrompts.findIndex((existing, existingIndex) =>
+          !claimedIndexes.has(existingIndex) &&
+          !existing.sourceLibrary &&
+          existing.name === prompt.name &&
+          existing.content === prompt.content
+        );
+      }
+
+      if (index === -1) {
+        nextPrompts.push({
+          ...prompt,
+          id: generateId(),
+          createdAt: now,
+          updatedAt: now,
+          usageCount: 0,
+          lastUsedAt: null,
+          importedAt: now,
+          sourceLibrary: library.id,
+          sourceVersion: library.version
+        });
+        claimedIndexes.add(nextPrompts.length - 1);
+        added += 1;
+        continue;
+      }
+
+      claimedIndexes.add(index);
+      const existing = nextPrompts[index];
+      const contentChanged = existing.name !== prompt.name ||
+        existing.category !== prompt.category ||
+        existing.content !== prompt.content;
+      const metadataChanged = existing.sourceLibrary !== library.id ||
+        existing.sourceId !== prompt.sourceId ||
+        existing.sourceVersion !== library.version;
+
+      nextPrompts[index] = {
+        ...existing,
+        name: prompt.name,
+        category: prompt.category,
+        content: prompt.content,
+        importedAt: now,
+        sourceLibrary: library.id,
+        sourceId: prompt.sourceId,
+        sourceVersion: library.version,
+        updatedAt: contentChanged ? now : existing.updatedAt
+      };
+
+      if (contentChanged || metadataChanged) updated += 1;
+      else unchanged += 1;
+    }
+
+    return {
+      prompts: nextPrompts,
+      result: {
+        success: true,
+        count: imported.length,
+        added,
+        updated,
+        unchanged,
+        libraryId: library.id,
+        libraryVersion: library.version
+      }
     };
   }
 
@@ -156,7 +271,19 @@
       nextPrompts = current.map((prompt, promptIndex) => promptIndex === index ? updated : prompt);
       result = updated;
     } else if (action === 'prompt.import') {
-      const imported = parseImportJson(payload.jsonData);
+      const importPayload = parseImportPayload(payload.jsonData);
+      const imported = importPayload.prompts;
+      if (importPayload.library && payload.merge !== false) {
+        const operation = importOfficialLibrary(
+          current,
+          imported,
+          importPayload.library,
+          now,
+          generateId
+        );
+        assertCollectionSize(operation.prompts);
+        return operation;
+      }
       const importedPrompts = imported.map(prompt => ({
         ...prompt,
         id: generateId(),
@@ -173,11 +300,13 @@
   }
   const api = {
     LIMITS,
+    importOfficialLibrary,
     applyOperation,
     assertCollectionSize,
     byteLength,
     mergePromptUpdate,
     parseImportJson,
+    parseImportPayload,
     sanitizePromptRecord,
     validateImportData
   };

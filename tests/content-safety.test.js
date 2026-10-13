@@ -44,7 +44,9 @@ test('contenteditable insertion always synchronizes an input event', () => {
 });
 
 test('debounced search captures the input value before shadow event retargeting', () => {
-  assert.match(content, /searchInput\.addEventListener\('input', \(\) => \{\s*const queryValue = String\(searchInput\.value \|\| ''\);/);
+  // The debounced callback reads the search element itself, never the retargeted event.target.
+  assert.match(content, /function getSearchQuery\(\) \{\s*const queryValue = String\(getPanelElement\('#prompt-search'\)\?\.value \|\| ''\);/);
+  assert.match(content, /searchDebounceTimer = window\.setTimeout\(\(\) => \{\s*visiblePromptCount = 100;\s*refreshPromptList\(getFilteredPrompts\(\)\);/);
   assert.doesNotMatch(content, /setTimeout\(\(\) => \{\s*let query = event\.target\.value/);
 });
 test('prompt mutations invalidate preload cache and storage sync preserves search', () => {
@@ -122,12 +124,49 @@ test('promotion link suppresses opener and referrer data', () => {
 
 test('manifest keeps the minimal permission and exposes only local panel CSS', () => {
   assert.deepEqual(manifest.permissions, ['storage']);
-  assert.equal(manifest.version, '2.0.7');
+  assert.equal(manifest.version, '2.0.10');
   assert.deepEqual(manifest.web_accessible_resources[0].resources, ['content.css']);
   assert.ok(manifest.content_scripts[0].js.includes('storage.js'));
 });
 
 test('shadow host hit testing does not leak panel clicks into the AI composer', () => {
-  assert.match(content, /promptPanelHost\.style\.width = 'min\(480px, calc\(100vw - 32px\)\)'/);
+  assert.match(
+    content,
+    /promptPanelHost\.style\.width = panelExpanded\s*\? 'min\(960px, calc\(100vw - 32px\)\)'\s*: 'min\(480px, calc\(100vw - 32px\)\)'/
+  );
   assert.match(css, /\.prompt-panel\s*\{[^}]*position: relative;[^}]*pointer-events: auto;/s);
+});
+
+test('logged-out ChatGPT grid composer keeps the prompt button above the composer box', () => {
+  const chatgptInserter = content.slice(
+    content.indexOf('function insertButtonForChatGPT'),
+    content.indexOf('function insertButtonForGemini')
+  );
+  assert.match(
+    chatgptInserter,
+    /getComputedStyle\(composerForm\)\.display === 'grid'[\s\S]*composerForm\.parentElement\.insertBefore\(button, composerForm\)/
+  );
+});
+
+test('panel lets users read whole prompts without opening the editor', () => {
+  assert.match(content, /class="prompt-item-expand" aria-expanded="false"/);
+  assert.match(content, /contentElement\.textContent = expanded \? prompt\.content/);
+  assert.match(content, /class="prompt-action-preview prompt-variable-full-preview"/);
+  assert.match(content, /fullPreview\.textContent = VariableUtils\.replaceVariables\(prompt\.content, values\)/);
+  assert.match(content, /chrome\.storage\.local\.set\(\{ \[PANEL_EXPANDED_STORAGE_KEY\]: panelExpanded \}\)/);
+});
+
+test('Alt+P command toggles the panel through the background service', () => {
+  assert.equal(manifest.commands['toggle-prompt-panel'].suggested_key.default, 'Alt+P');
+  assert.match(content, /request\.action === 'togglePromptPanel'[\s\S]*togglePromptPanel\(\);/);
+});
+
+test('panel offers category filters, sorting, duplicates, and remembered variables', () => {
+  assert.ok(manifest.content_scripts[0].js.indexOf('prompt-utils.js') < manifest.content_scripts[0].js.indexOf('content.js'));
+  assert.match(content, /PromptUtils\.sortPrompts\(prompts, sortMode\)/);
+  assert.match(content, /PromptUtils\.filterByCategory\(matches, activeCategory\)/);
+  assert.match(content, /class="prompt-item-duplicate"/);
+  assert.match(content, /variableHistory\.load\(prompt\.id\)/);
+  assert.match(content, /await variableHistory\.save\(promptId, values\)/);
+  assert.match(css, /\.prompt-panel-search input \{\s*width: 100%;\s*box-sizing: border-box;/);
 });
