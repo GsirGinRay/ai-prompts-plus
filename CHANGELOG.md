@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.10] - 2026-10-13
+
+### Added
+- Show the full text of long prompts directly in the prompt list ("Show full text") in both the in-page panel and the popup.
+- Expand the in-page panel to a wide layout (up to 960px); the choice is remembered.
+- Preview the full prompt, updated live, while filling in variables.
+- Keyboard shortcut Alt+P (Ctrl+Shift+P on macOS) opens or closes the prompt panel (changeable at chrome://extensions/shortcuts).
+- Category filter chips and a sort menu (most used, recently used, name) in the panel and the popup; the sort choice is remembered.
+- Duplicate a prompt with one click to create variations.
+- Remember the last values entered for each prompt's variables and fill them in next time; deleting a prompt also clears its remembered values.
+- Open the popup as a full-page manager in a new tab for a larger view.
+
+### Changed
+- The prompt editor grows with its content instead of staying at a fixed small height.
+- The popup uses the same black primary color as the in-page panel instead of green.
+
+### Fixed
+- ChatGPT no longer redirects typing or pasting in the prompt panel (e.g. the new prompt title) into the chat composer.
+- On logged-out ChatGPT the prompt button now sits above the composer instead of being squeezed inside it.
+- The panel search box no longer overflows the right edge of the panel.
+
 ## [2.0.9] - 2026-08-28
 
 ### Fixed

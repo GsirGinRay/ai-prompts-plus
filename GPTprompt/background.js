@@ -50,3 +50,11 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }));
   return true;
 });
+
+chrome.commands.onCommand.addListener(async command => {
+  if (command !== 'toggle-prompt-panel') return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+  // Pages without the content script (e.g. chrome:// tabs) have no receiver; ignore them.
+  chrome.tabs.sendMessage(tab.id, { action: 'togglePromptPanel' }).catch(() => {});
+});

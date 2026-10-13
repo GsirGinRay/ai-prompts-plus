@@ -21,6 +21,14 @@ const panelCleanupTasks = new Set();
 let promptBackdrop = null;
 let currentLang = 'zh-TW';
 let currentPlatform = null; // 'chatgpt' 或 'gemini'
+let panelExpanded = false;
+const PROMPT_PREVIEW_LENGTH = 100;
+const LIST_PREFERENCES_STORAGE_KEY = 'promptListPreferences';
+const SORT_LABEL_KEYS = { usage: 'sortUsage', recent: 'sortRecent', name: 'sortName' };
+let activeCategory = '';
+let sortMode = 'usage';
+const variableHistory = PromptUtils.createVariableHistory(chrome.storage.local);
+const PANEL_EXPANDED_STORAGE_KEY = 'promptPanelExpanded';
 
 
 // 平台配置
@@ -111,8 +119,22 @@ const i18nMessages = {
     promptNotInserted: '找不到輸入框，請確認您在 AI 對話頁面',
     promptInserted: '提示詞已插入，可繼續調整',
     showMore: '顯示更多',
+    expandContent: '展開全文',
+    collapseContent: '收合',
+    expandPanel: '放大面板',
+    collapsePanel: '縮小面板',
+    promptPreview: '提示詞預覽',
     prompts: '提示詞',
-    openPromptManager: '開啟提示詞管理器',
+    openPromptManager: '開啟提示詞管理器（快捷鍵 {shortcut}）',
+    allCategories: '全部',
+    sortLabel: '排序',
+    sortUsage: '最常使用',
+    sortRecent: '最近使用',
+    sortName: '名稱',
+    duplicate: '建立副本',
+    copySuffix: '（副本）',
+    promptDuplicated: '已建立副本',
+    duplicateFailed: '建立副本失敗，請重試',
     promptManager: '提示詞管理器',
     add: '新增',
     close: '關閉',
@@ -168,8 +190,22 @@ const i18nMessages = {
     promptNotInserted: 'Input box not found, please ensure you are on an AI conversation page',
     promptInserted: 'Prompt inserted. You can review and adjust it.',
     showMore: 'Show more',
+    expandContent: 'Show full text',
+    collapseContent: 'Collapse',
+    expandPanel: 'Expand panel',
+    collapsePanel: 'Shrink panel',
+    promptPreview: 'Prompt preview',
     prompts: 'Prompts',
-    openPromptManager: 'Open Prompt Manager',
+    openPromptManager: 'Open Prompt Manager (shortcut {shortcut})',
+    allCategories: 'All',
+    sortLabel: 'Sort',
+    sortUsage: 'Most used',
+    sortRecent: 'Recently used',
+    sortName: 'Name',
+    duplicate: 'Duplicate',
+    copySuffix: ' (copy)',
+    promptDuplicated: 'Duplicate created',
+    duplicateFailed: 'Failed to duplicate, please try again',
     promptManager: 'Prompt Manager',
     add: 'Add',
     close: 'Close',
@@ -258,6 +294,11 @@ async function initLanguage() {
  * 監聽來自 popup 的訊息
  */
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.action === 'togglePromptPanel') {
+    captureComposerSelection();
+    togglePromptPanel();
+    return undefined;
+  }
   if (request.action !== 'insertPrompt') return undefined;
   performPromptAction(request.content)
     .then(result => sendResponse({ success: result.inserted, result }))
@@ -590,6 +631,15 @@ function insertButtonForChatGPT(button) {
   const composerForm = document.querySelector('form[data-type="unified-composer"]') || composer?.closest('form');
   if (composerForm) {
     applyCenteredButtonStyle(button, { marginBottom: '4px' });
+    // Logged-out ChatGPT renders the form itself as the grid-based composer box, so a
+    // button inside it would be auto-placed into the "leading" column next to "+".
+    if (getComputedStyle(composerForm).display === 'grid' && composerForm.parentElement) {
+      const width = composerForm.getBoundingClientRect().width;
+      if (width > 0) button.style.width = `${width}px`;
+      button.style.maxWidth = '100%';
+      composerForm.parentElement.insertBefore(button, composerForm);
+      return true;
+    }
     composerForm.insertBefore(button, composerForm.firstElementChild);
     return true;
   }
@@ -655,7 +705,9 @@ function createQuickAccessButton() {
     </svg>
     <span>${t('prompts')}</span>
   `;
-  button.title = t('openPromptManager');
+  button.title = t('openPromptManager', {
+    shortcut: /Mac/i.test(navigator.platform) ? 'Ctrl+Shift+P' : 'Alt+P'
+  });
   button.addEventListener('pointerdown', event => {
     captureComposerSelection();
     event.preventDefault();
@@ -710,7 +762,28 @@ function ensurePromptPanelHost() {
   stylesheet.href = chrome.runtime.getURL('content.css');
   promptPanelRoot.appendChild(stylesheet);
   document.body.appendChild(promptPanelHost);
+  HostEventShield.setPanel(promptPanelHost, promptPanelRoot);
 }
+async function loadPanelExpanded() {
+  try {
+    const stored = await chrome.storage.local.get(PANEL_EXPANDED_STORAGE_KEY);
+    return stored[PANEL_EXPANDED_STORAGE_KEY] === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function togglePanelExpanded() {
+  panelExpanded = !panelExpanded;
+  showPromptPanelHost();
+  const button = getPanelElement('.prompt-panel-expand');
+  if (button) {
+    button.setAttribute('aria-pressed', String(panelExpanded));
+    button.title = t(panelExpanded ? 'collapsePanel' : 'expandPanel');
+  }
+  chrome.storage.local.set({ [PANEL_EXPANDED_STORAGE_KEY]: panelExpanded }).catch(() => {});
+}
+
 function hidePromptPanelHost() {
   if (!promptPanelHost) return;
   promptPanelHost.style.visibility = 'hidden';
@@ -724,7 +797,9 @@ function showPromptPanelHost() {
   if (!promptPanelHost) return;
   promptPanelHost.style.visibility = 'visible';
   promptPanelHost.style.pointerEvents = 'auto';
-  promptPanelHost.style.width = 'min(480px, calc(100vw - 32px))';
+  promptPanelHost.style.width = panelExpanded
+    ? 'min(960px, calc(100vw - 32px))'
+    : 'min(480px, calc(100vw - 32px))';
   promptPanelHost.style.maxHeight = 'calc(100vh - 32px)';
   promptPanelHost.style.overflow = 'visible';
 }
@@ -749,10 +824,8 @@ function refreshPromptList(prompts = promptsData) {
 }
 
 function refreshPromptListForCurrentSearch() {
-  const searchInput = getPanelElement('#prompt-search');
-  const queryValue = String(searchInput?.value || '');
-  const query = queryValue.startsWith('/') ? queryValue.slice(1).trim() : queryValue.trim();
-  refreshPromptList(PanelUtils.filterPrompts(promptsData, query));
+  renderCategoryChips();
+  refreshPromptList(getFilteredPrompts());
 }
 async function togglePromptPanel() {
   if (promptPanel?.isConnected) {
@@ -801,6 +874,9 @@ async function createPromptPanel() {
     promptsData = [];
   }
 
+  panelExpanded = await loadPanelExpanded();
+  sortMode = await loadSortMode();
+
   // 建立面板容器
   // Closed Shadow DOM keeps local prompt data isolated from the host page.
   ensurePromptPanelHost();
@@ -822,11 +898,27 @@ async function createPromptPanel() {
           </svg>
           ${t('add')}
         </button>
+        <button type="button" class="prompt-panel-expand" aria-pressed="${panelExpanded}" aria-label="${t('expandPanel')}" title="${t(panelExpanded ? 'collapsePanel' : 'expandPanel')}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
         <button type="button" class="prompt-panel-close" title="${t('close')}">✕</button>
       </div>
     </div>
     <div class="prompt-panel-search">
       <input type="text" id="prompt-search" placeholder="${t('searchPrompts')}" />
+      <div class="prompt-panel-toolbar">
+        <div class="prompt-category-chips" role="group" aria-label="${t('category')}"></div>
+        <select class="prompt-sort-select" aria-label="${t('sortLabel')}">
+          ${PromptUtils.SORT_MODES.map(mode => `
+            <option value="${mode}" ${mode === sortMode ? 'selected' : ''}>${t(SORT_LABEL_KEYS[mode])}</option>
+          `).join('')}
+        </select>
+      </div>
     </div>
     <div class="prompt-panel-list" id="prompt-panel-list">
       ${renderPromptList(promptsData)}
@@ -845,39 +937,78 @@ async function createPromptPanel() {
     showAddPromptPanel();
   });
 
+  promptPanel.querySelector('.prompt-panel-expand').addEventListener('click', togglePanelExpanded);
+
   const searchInput = promptPanel.querySelector('#prompt-search');
 
   searchInput.addEventListener('input', () => {
-    const queryValue = String(searchInput.value || '');
     window.clearTimeout(searchDebounceTimer);
     searchDebounceTimer = window.setTimeout(() => {
-      const query = queryValue.startsWith('/') ? queryValue.slice(1) : queryValue;
-      const queryLower = query.toLocaleLowerCase();
-      const filtered = PanelUtils.filterPrompts(promptsData, queryLower);
       visiblePromptCount = 100;
-      refreshPromptList(filtered);
+      refreshPromptList(getFilteredPrompts());
     }, 80);
   });
   // 按下 Enter 鍵時，如果只有一個結果，直接使用該提示詞
   searchInput.addEventListener('keydown', (e) => {
     if (PanelUtils.isConfirmKey(e)) {
-      let query = searchInput.value;
-
-      if (query.startsWith('/')) {
-        query = query.substring(1);
-      }
-
-      const queryLower = query.toLowerCase();
-      const filtered = PanelUtils.filterPrompts(promptsData, queryLower);
-
+      const filtered = getFilteredPrompts();
       if (filtered.length === 1) {
         usePrompt(filtered[0]);
       }
     }
   });
 
+  promptPanel.querySelector('.prompt-category-chips').addEventListener('click', event => {
+    const chip = event.target.closest('.prompt-category-chip');
+    if (!chip) return;
+    activeCategory = decodeURIComponent(chip.dataset.category || '');
+    visiblePromptCount = 100;
+    refreshPromptListForCurrentSearch();
+    getPanelElement('.prompt-category-chip[aria-pressed="true"]')?.focus();
+  });
+
+  promptPanel.querySelector('.prompt-sort-select').addEventListener('change', event => {
+    sortMode = event.target.value;
+    chrome.storage.local.set({ [LIST_PREFERENCES_STORAGE_KEY]: { sortMode } }).catch(() => {});
+    refreshPromptListForCurrentSearch();
+  });
+
+  renderCategoryChips();
   bindPromptItemEvents();
   loadPromoBannerWhenReady(promptPanel);
+}
+
+async function loadSortMode() {
+  try {
+    const stored = await chrome.storage.local.get(LIST_PREFERENCES_STORAGE_KEY);
+    const mode = stored[LIST_PREFERENCES_STORAGE_KEY]?.sortMode;
+    return PromptUtils.SORT_MODES.includes(mode) ? mode : 'usage';
+  } catch (_error) {
+    return 'usage';
+  }
+}
+
+function getSearchQuery() {
+  const queryValue = String(getPanelElement('#prompt-search')?.value || '');
+  return (queryValue.startsWith('/') ? queryValue.slice(1) : queryValue).trim();
+}
+
+function getFilteredPrompts() {
+  const matches = PanelUtils.filterPrompts(promptsData, getSearchQuery());
+  return PromptUtils.filterByCategory(matches, activeCategory);
+}
+
+function renderCategoryChips() {
+  const container = getPanelElement('.prompt-category-chips');
+  if (!container) return;
+  const categories = PromptUtils.getCategories(promptsData);
+  if (!categories.includes(activeCategory)) activeCategory = '';
+  container.hidden = categories.length === 0;
+  container.innerHTML = ['', ...categories].map(category => `
+    <button type="button" class="prompt-category-chip" data-category="${encodeURIComponent(category)}" aria-pressed="${category === activeCategory}">
+      ${escapeHtml(category || t('allCategories'))}
+    </button>
+  `).join('');
 }
 
 /**
@@ -1020,14 +1151,8 @@ function renderPromptList(prompts) {
     return `<div class="prompt-panel-empty">${t('noPrompts')}</div>`;
   }
 
-  // 排序：置頂的在前，然後按使用次數排序
-  const sortedPrompts = [...prompts].sort((a, b) => {
-    // 先按置頂狀態排序
-    if (a.pinned && !b.pinned) return -1;
-    if (!a.pinned && b.pinned) return 1;
-    // 如果都置頂或都不置頂，按使用次數排序
-    return (b.usageCount || 0) - (a.usageCount || 0);
-  });
+  // 排序：置頂的在前，其餘依使用者選擇的方式排序
+  const sortedPrompts = PromptUtils.sortPrompts(prompts, sortMode);
 
   const visiblePrompts = sortedPrompts.slice(0, visiblePromptCount);
   const markup = visiblePrompts.map(prompt => {
@@ -1047,6 +1172,12 @@ function renderPromptList(prompts) {
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
             </button>
+            <button type="button" class="prompt-item-duplicate" data-id="${encodeURIComponent(prompt.id)}" title="${t('duplicate')}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
             <button type="button" class="prompt-item-edit" data-id="${encodeURIComponent(prompt.id)}" title="${t('edit')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -1063,7 +1194,10 @@ function renderPromptList(prompts) {
             </button>
           </div>
         </div>
-        <div class="prompt-item-content">${escapeHtml(prompt.content.substring(0, 100))}${prompt.content.length > 100 ? '...' : ''}</div>
+        <div class="prompt-item-content">${escapeHtml(getPromptPreviewText(prompt.content))}</div>
+        ${prompt.content.length > PROMPT_PREVIEW_LENGTH ? `
+          <button type="button" class="prompt-item-expand" aria-expanded="false">${t('expandContent')}</button>
+        ` : ''}
         ${variables.length > 0 ? `
           <div class="prompt-item-variables">
             ${variables.map(renderVariableTag).join('')}
@@ -1076,6 +1210,23 @@ function renderPromptList(prompts) {
   return markup + (remaining > 0
     ? `<button type="button" class="prompt-load-more">${t('showMore')} (${remaining})</button>`
     : '');
+}
+
+function getPromptPreviewText(content) {
+  return content.length > PROMPT_PREVIEW_LENGTH
+    ? `${content.substring(0, PROMPT_PREVIEW_LENGTH)}...`
+    : content;
+}
+
+function togglePromptItemContent(item, prompt) {
+  const contentElement = item.querySelector('.prompt-item-content');
+  const button = item.querySelector('.prompt-item-expand');
+  if (!contentElement || !button) return;
+  const expanded = button.getAttribute('aria-expanded') !== 'true';
+  contentElement.textContent = expanded ? prompt.content : getPromptPreviewText(prompt.content);
+  contentElement.classList.toggle('is-expanded', expanded);
+  button.setAttribute('aria-expanded', String(expanded));
+  button.textContent = t(expanded ? 'collapseContent' : 'expandContent');
 }
 
 /**
@@ -1096,7 +1247,9 @@ function bindPromptItemEvents() {
     const id = decodeURIComponent(item.dataset.id);
     const prompt = promptsData.find(candidate => candidate.id === id);
     if (!prompt) return;
-    if (event.target.closest('.prompt-item-pin')) await togglePinPrompt(id);
+    if (event.target.closest('.prompt-item-expand')) togglePromptItemContent(item, prompt);
+    else if (event.target.closest('.prompt-item-pin')) await togglePinPrompt(id);
+    else if (event.target.closest('.prompt-item-duplicate')) await duplicatePrompt(prompt);
     else if (event.target.closest('.prompt-item-edit')) showAddPromptPanel(prompt);
     else if (event.target.closest('.prompt-item-delete')) await deletePrompt(id);
     else usePrompt(prompt);
@@ -1116,6 +1269,17 @@ async function togglePinPrompt(id) {
   }
 }
 
+async function duplicatePrompt(prompt) {
+  try {
+    await StorageManager.savePrompt(PromptUtils.createDuplicateDraft(prompt, t('copySuffix')));
+    await loadPromptsData(true);
+    refreshPromptListForCurrentSearch();
+    showNotification(t('promptDuplicated'), 'success');
+  } catch (_error) {
+    showNotification(t('duplicateFailed'), 'error');
+  }
+}
+
 /**
  * 刪除提示詞
  */
@@ -1123,6 +1287,7 @@ async function deletePrompt(id) {
   if (!confirm(t('confirmDelete'))) return;
   try {
     await StorageManager.deletePrompt(id);
+    await variableHistory.remove(id);
     await loadPromptsData(true);
     refreshPromptListForCurrentSearch();
     showNotification(t('promptDeleted'), 'success');
@@ -1221,7 +1386,8 @@ function showVariableInputPanel(prompt, variables) {
       <h4>${escapeHtml(prompt.name)}</h4>
     </div>
     <div class="prompt-variable-inputs"></div>
-
+    <div class="prompt-variable-preview-label">${t('promptPreview')}</div>
+    <div class="prompt-action-preview prompt-variable-full-preview"></div>
     <div class="prompt-variable-actions">
       <button type="button" class="prompt-insert-btn">${t('insertPrompt')}</button>
 
@@ -1259,6 +1425,28 @@ function showVariableInputPanel(prompt, variables) {
 
   // 綁定插入按鈕
   variablePanel.querySelector('.prompt-insert-btn').addEventListener('click', insertVariablePrompt);
+
+  // 即時預覽填入變數後的完整提示詞
+  const fullPreview = variablePanel.querySelector('.prompt-variable-full-preview');
+  const updateFullPreview = () => {
+    const values = new Map();
+    variablePanel.querySelectorAll('.prompt-variable-input').forEach(input => {
+      values.set(input.dataset.variable, input.value);
+    });
+    fullPreview.textContent = VariableUtils.replaceVariables(prompt.content, values);
+  };
+  inputsContainer.addEventListener('input', updateFullPreview);
+  updateFullPreview();
+
+  // 帶入上次填寫的變數值（使用者已經開始輸入的欄位不覆蓋）
+  variableHistory.load(prompt.id).then(remembered => {
+    if (!variablePanel.isConnected) return;
+    const merged = PromptUtils.mergeVariableValues(variables, remembered);
+    variablePanel.querySelectorAll('.prompt-variable-input').forEach(input => {
+      if (input.value === input.dataset.defaultValue) input.value = merged[input.dataset.variable];
+    });
+    updateFullPreview();
+  });
 
   // 為所有變數輸入框添加 Enter 鍵監聽
   const inputs = variablePanel.querySelectorAll('.prompt-variable-input');
@@ -1308,9 +1496,11 @@ async function insertVariablePrompt() {
   activePromptAction = true;
   variablePanel.querySelectorAll('button, input').forEach(element => { element.disabled = true; });
   try {
+    const promptId = currentPrompt.id;
     const finalContent = VariableUtils.replaceVariables(currentPrompt.content, values);
     const result = await performPromptAction(finalContent);
     if (!result.inserted) return;
+    await variableHistory.save(promptId, values);
     await incrementUsageCount(currentPrompt.id);
     await togglePromptPanel();
   } finally {
@@ -1424,6 +1614,15 @@ function showAddPromptPanel(editPrompt = null) {
     });
   }
 
+  function fitContentTextarea() {
+    const form = addPanel.querySelector('.prompt-add-form');
+    const formScrollTop = form.scrollTop;
+    const maxHeight = Math.max(160, Math.round(window.innerHeight * 0.6));
+    contentTextarea.style.height = 'auto';
+    contentTextarea.style.height = `${Math.min(contentTextarea.scrollHeight + 2, maxHeight)}px`;
+    form.scrollTop = formScrollTop;
+  }
+
   function syncContentHighlightScroll() {
     contentHighlight.style.width = `${contentTextarea.clientWidth + 2}px`;
     contentHighlight.style.height = `${contentTextarea.clientHeight + 2}px`;
@@ -1463,6 +1662,7 @@ function showAddPromptPanel(editPrompt = null) {
     if (!result) return false;
 
     contentTextarea.value = result.content;
+    fitContentTextarea();
     updateContentHighlight();
     contentTextarea.focus();
     contentTextarea.setSelectionRange(result.selectionStart, result.selectionEnd);
@@ -1493,15 +1693,26 @@ function showAddPromptPanel(editPrompt = null) {
 
   addPanel.querySelector('.prompt-variable-confirm-btn').addEventListener('click', confirmVariable);
   addPanel.querySelector('.prompt-variable-cancel-btn').addEventListener('click', closeCreator);
-  contentTextarea.addEventListener('input', updateContentHighlight);
+  contentTextarea.addEventListener('input', () => {
+    fitContentTextarea();
+    updateContentHighlight();
+  });
   contentTextarea.addEventListener('compositionstart', () => { isComposing = true; });
   contentTextarea.addEventListener('compositionend', () => {
     isComposing = false;
     updateContentHighlight();
   });
   contentTextarea.addEventListener('scroll', syncContentHighlightScroll);
+  let observedTextareaWidth = contentTextarea.clientWidth;
   const contentResizeObserver = typeof ResizeObserver !== 'undefined'
-    ? new ResizeObserver(syncContentHighlightScroll)
+    ? new ResizeObserver(() => {
+      // Panel expand/shrink rewraps the text, so refit the height to the new width.
+      if (contentTextarea.clientWidth !== observedTextareaWidth) {
+        observedTextareaWidth = contentTextarea.clientWidth;
+        window.requestAnimationFrame(fitContentTextarea);
+      }
+      syncContentHighlightScroll();
+    })
     : null;
   contentResizeObserver?.observe(contentTextarea);
   const cleanupAddPanel = () => {
@@ -1510,6 +1721,7 @@ function showAddPromptPanel(editPrompt = null) {
     panelCleanupTasks.delete(cleanupAddPanel);
   };
   panelCleanupTasks.add(cleanupAddPanel);
+  fitContentTextarea();
   updateContentHighlight();
   [variableNameInput, variableDefaultInput].forEach(input => {
     input.addEventListener('input', updateCreatorPreview);
@@ -1574,6 +1786,7 @@ function showAddPromptPanel(editPrompt = null) {
 
       try {
         await StorageManager.deletePrompt(editPrompt.id);
+        await variableHistory.remove(editPrompt.id);
         await loadPromptsData(true);
 
         showNotification(t('promptDeleted'), 'success');

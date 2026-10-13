@@ -54,7 +54,7 @@ const StorageManager = {
   async exportPrompts() {
     const prompts = await this.getAllPrompts();
     return JSON.stringify({
-      version: '2.0.9',
+      version: '2.0.10',
       exportedAt: new Date().toISOString(),
       prompts
     }, null, 2);

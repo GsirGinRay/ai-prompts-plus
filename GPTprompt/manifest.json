@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_appName__",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "description": "__MSG_appDescription__",
   "icons": {
     "16": "icons/icon16.png",
@@ -14,6 +14,15 @@
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
+    }
+  },
+  "commands": {
+    "toggle-prompt-panel": {
+      "suggested_key": {
+        "default": "Alt+P",
+        "mac": "MacCtrl+Shift+P"
+      },
+      "description": "__MSG_commandTogglePanel__"
     }
   },
   "permissions": [
@@ -39,13 +48,28 @@
       ],
       "js": [
         "variable-utils.js",
-        "panel-utils.js",
+        "prompt-utils.js",
         "storage.js",
         "content.js"
       ],
       "css": [
         "content.css"
       ]
+    },
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*",
+        "https://*.claude.ai/*",
+        "https://grok.com/*",
+        "https://*.grok.com/*"
+      ],
+      "js": [
+        "panel-utils.js",
+        "host-event-shield.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "background": {

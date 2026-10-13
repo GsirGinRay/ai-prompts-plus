@@ -27,6 +27,12 @@ let pendingVariableSelection = null;
 let promptHighlightFrame = null;
 let promptInputComposing = false;
 let promptResizeObserver = null;
+let allPrompts = [];
+let activeCategory = '';
+let sortMode = 'usage';
+const LIST_PREFERENCES_STORAGE_KEY = 'promptListPreferences';
+const isPageView = new URLSearchParams(location.search).get('view') === 'page';
+const variableHistory = PromptUtils.createVariableHistory(chrome.storage.local);
 
 /**
  * 初始化
@@ -35,6 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化語言設定
   await I18n.init();
   I18n.updatePageTranslations();
+
+  document.body.classList.toggle('page-view', isPageView);
+  sortMode = await loadSortMode();
+  document.getElementById('sortSelect').value = sortMode;
 
   // 檢查是否是第一次使用，如果是則載入預設提示詞
   await initializeDefaultPrompts();
@@ -93,6 +103,16 @@ function updatePromptContentHighlight() {
   });
 }
 
+function fitPromptContentTextarea() {
+  const textarea = document.getElementById('promptContent');
+  const modalBody = textarea.closest('.modal-body');
+  const modalScrollTop = modalBody?.scrollTop ?? 0;
+  textarea.style.height = 'auto';
+  const maxHeight = isPageView ? Math.max(320, Math.round(window.innerHeight * 0.55)) : 320;
+  textarea.style.height = `${Math.min(textarea.scrollHeight + 2, maxHeight)}px`;
+  if (modalBody) modalBody.scrollTop = modalScrollTop;
+}
+
 function syncPromptContentHighlightScroll() {
   const textarea = document.getElementById('promptContent');
   const highlight = document.getElementById('promptContentHighlight');
@@ -140,6 +160,7 @@ function insertVariableToTextarea(name = '', defaultValue = '') {
   if (!result) return false;
 
   textarea.value = result.content;
+  fitPromptContentTextarea();
   updatePromptContentHighlight();
   textarea.focus();
   textarea.setSelectionRange(result.selectionStart, result.selectionEnd);
@@ -213,7 +234,10 @@ function setupEventListeners() {
   document.getElementById('variableName').addEventListener('input', updateVariableCreatorPreview);
   document.getElementById('variableDefault').addEventListener('input', updateVariableCreatorPreview);
   const promptContent = document.getElementById('promptContent');
-  promptContent.addEventListener('input', updatePromptContentHighlight);
+  promptContent.addEventListener('input', () => {
+    fitPromptContentTextarea();
+    updatePromptContentHighlight();
+  });
   promptContent.addEventListener('compositionstart', () => { promptInputComposing = true; });
   promptContent.addEventListener('compositionend', () => {
     promptInputComposing = false;
@@ -224,6 +248,25 @@ function setupEventListeners() {
     promptResizeObserver = new ResizeObserver(syncPromptContentHighlightScroll);
     promptResizeObserver.observe(promptContent);
   }
+
+  // 分類篩選、排序、在新分頁開啟
+  document.getElementById('categoryChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.category-chip');
+    if (!chip) return;
+    activeCategory = decodeURIComponent(chip.dataset.category || '');
+    loadPrompts().then(() => {
+      document.querySelector('.category-chip[aria-pressed="true"]')?.focus();
+    });
+  });
+  document.getElementById('sortSelect').addEventListener('change', (e) => {
+    sortMode = e.target.value;
+    chrome.storage.local.set({ [LIST_PREFERENCES_STORAGE_KEY]: { sortMode } }).catch(() => {});
+    loadPrompts();
+  });
+  document.getElementById('openInTabBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html?view=page') });
+    window.close();
+  });
 
   // 匯出/匯入
   exportBtn.addEventListener('click', handleExport);
@@ -322,15 +365,46 @@ async function handleLoadDefaultPrompts() {
 /**
  * 載入並顯示提示詞
  */
-async function loadPrompts(query = '') {
+async function loadPrompts(query = searchInput.value) {
   try {
-    const prompts = query
-      ? await StorageManager.searchPrompts(query)
-      : await StorageManager.getAllPrompts();
-
-    renderPrompts(prompts);
+    allPrompts = await StorageManager.getAllPrompts();
+    renderCategoryChips();
+    const matches = PanelUtils.filterPrompts(allPrompts, query);
+    const visible = PromptUtils.filterByCategory(matches, activeCategory);
+    renderPrompts(PromptUtils.sortPrompts(visible, sortMode));
   } catch (error) {
     // 靜默處理
+  }
+}
+
+async function loadSortMode() {
+  try {
+    const stored = await chrome.storage.local.get(LIST_PREFERENCES_STORAGE_KEY);
+    const mode = stored[LIST_PREFERENCES_STORAGE_KEY]?.sortMode;
+    return PromptUtils.SORT_MODES.includes(mode) ? mode : 'usage';
+  } catch (_error) {
+    return 'usage';
+  }
+}
+
+function renderCategoryChips() {
+  const container = document.getElementById('categoryChips');
+  const categories = PromptUtils.getCategories(allPrompts);
+  if (!categories.includes(activeCategory)) activeCategory = '';
+  container.hidden = categories.length === 0;
+  container.innerHTML = ['', ...categories].map(category => `
+    <button type="button" class="category-chip" data-category="${encodeURIComponent(category)}" aria-pressed="${category === activeCategory}">
+      ${escapeHtml(category || I18n.t('allCategories'))}
+    </button>
+  `).join('');
+}
+
+async function duplicatePrompt(prompt) {
+  try {
+    await StorageManager.savePrompt(PromptUtils.createDuplicateDraft(prompt, I18n.t('copySuffix')));
+    await loadPrompts();
+  } catch (_error) {
+    alert(I18n.t('duplicateFailed'));
   }
 }
 
@@ -353,6 +427,10 @@ function renderPrompts(prompts) {
   });
 }
 
+function isLongPromptContent(content) {
+  return content.length > 100 || content.split('\n').length > 3;
+}
+
 /**
  * 建立提示詞卡片
  */
@@ -370,6 +448,12 @@ function createPromptCard(prompt) {
         ${prompt.category ? `<span class="prompt-card-category">${escapeHtml(prompt.category)}</span>` : ''}
       </div>
       <div class="prompt-card-actions">
+        <button class="duplicate-btn" title="${escapeHtml(I18n.t('duplicate'))}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
         <button class="edit-btn" title="編輯">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -385,6 +469,9 @@ function createPromptCard(prompt) {
       </div>
     </div>
     <div class="prompt-card-content">${escapeHtml(prompt.content)}</div>
+    ${isLongPromptContent(prompt.content) ? `
+      <button type="button" class="card-expand-btn" aria-expanded="false">${I18n.t('expandContent')}</button>
+    ` : ''}
     ${variables.length > 0 ? `
       <div class="prompt-card-footer">
         ${variables.map(renderVariableTag).join('')}
@@ -394,9 +481,24 @@ function createPromptCard(prompt) {
 
   // 點擊卡片使用提示詞
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('.prompt-card-actions')) {
+    if (!e.target.closest('.prompt-card-actions, .card-expand-btn')) {
       usePrompt(prompt);
     }
+  });
+
+  // 展開／收合完整內容
+  card.querySelector('.card-expand-btn')?.addEventListener('click', (e) => {
+    const button = e.currentTarget;
+    const expanded = button.getAttribute('aria-expanded') !== 'true';
+    card.querySelector('.prompt-card-content').classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = I18n.t(expanded ? 'collapseContent' : 'expandContent');
+  });
+
+  // 建立副本
+  card.querySelector('.duplicate-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    duplicatePrompt(prompt);
   });
 
   // 編輯按鈕
@@ -429,6 +531,7 @@ function openEditModal(prompt = null) {
     : '';
 
   editModal.style.display = 'flex';
+  fitPromptContentTextarea();
   updatePromptContentHighlight();
   document.getElementById('promptName').focus();
 }
@@ -494,6 +597,7 @@ async function deletePrompt(id) {
 
   try {
     await StorageManager.deletePrompt(id);
+    await variableHistory.remove(id);
     await loadPrompts(searchInput.value);
   } catch (error) {
     alert(I18n.t('deleteFailed'));
@@ -554,6 +658,16 @@ function showVariableModal(variables) {
   variableModal.style.display = 'flex';
   const firstInput = container.querySelector('input');
   if (firstInput) firstInput.focus();
+
+  // 帶入上次填寫的變數值（使用者已經開始輸入的欄位不覆蓋）
+  const prompt = currentInsertingPrompt;
+  variableHistory.load(prompt.id).then(remembered => {
+    if (currentInsertingPrompt !== prompt) return;
+    const merged = PromptUtils.mergeVariableValues(variables, remembered);
+    container.querySelectorAll('input').forEach(input => {
+      if (input.value === input.dataset.defaultValue) input.value = merged[input.dataset.variable];
+    });
+  });
 }
 
 /**
@@ -580,6 +694,7 @@ async function handleInsertPrompt() {
   const finalContent = StorageManager.replaceVariables(currentInsertingPrompt.content, values);
   const inserted = await insertToPage(finalContent);
   if (!inserted) return;
+  await variableHistory.save(currentInsertingPrompt.id, values);
   await StorageManager.incrementUsageCount(currentInsertingPrompt.id);
   closeVariableModalFunc();
 }
@@ -631,9 +746,10 @@ function showCopySuccess(message) {
     toast.classList.add('show');
   }, 10);
 
-  // 1秒後關閉 popup
+  // 1秒後關閉 popup；完整管理頁保持開啟，只移除提示
   setTimeout(() => {
-    window.close();
+    if (isPageView) toast.remove();
+    else window.close();
   }, 1000);
 }
 
