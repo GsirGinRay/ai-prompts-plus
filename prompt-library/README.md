@@ -11,12 +11,17 @@
 5. 執行 `node --test tests/*.test.js`。
 6. 外掛介面有變動時，重拍第 01 課逐步截圖（輸出到 `dist/skool/images/`）：
    `node prompt-library-sync/capture-guide.mjs`（在 `D:\G股網\AI投資學院+\skool-course-uploader` 執行）。
-7. 在同一個目錄先預覽、再發布到免費與付費兩個教室：
-   - `node prompt-library-sync/sync.mjs`：只備份兩邊 20 頁並列出要更新的頁面
-   - `node prompt-library-sync/sync.mjs --publish`：只更新有差異的頁面，第 01 課會一併替換 JSON 附件，完成後回讀驗證
+7. 在同一個目錄先預覽、再一次發布到 GitHub 與免費、付費兩個教室：
+   - `node prompt-library-sync/sync.mjs`：只備份兩邊 20 頁，列出要更新的頁面與 GitHub 狀態
+   - `node prompt-library-sync/sync.mjs --publish`：
+     1. GitHub：commit 並 push `library/ai-prompts-plus-full.json` 與 `library.json` 到 `master`，再更新固定下載連結（release `prompt-library`）
+     2. Skool：只更新有差異的頁面，第 01 課會一併替換 JSON 附件，完成後回讀驗證
    - 只換截圖、文字沒變時加 `--force --lessons=01`
+   - 發布 GitHub 前，本專案必須在 `master`；同步只會自動提交上述兩個資料檔，程式碼變更請自行 commit
 
-不要直接在 Skool 上新增或修改提示詞；一律先改 `library.json`，否則下次同步會覆蓋線上內容。
+固定一鍵下載連結（永遠是最新版）：https://github.com/GsirGinRay/ai-prompts-plus/releases/download/prompt-library/ai-prompts-plus-full.json
+
+不要直接在 Skool 或 GitHub 上新增、修改提示詞；一律先改 `library.json`，否則下次同步會覆蓋線上內容，兩邊也會再度不一致。
 
 第 01 課內文的正本是 `skool-lesson-01.md`（一個步驟搭配一張圖）；版本號、提示詞數量與附件檔名由 `build.js` 自動帶入，外掛版本與日期讀自 `GPTprompt/manifest.json` 與 `CHANGELOG.md`。第 02～10 課刻意不寫版本號，所以只有提示詞實際變動的課程會被重新發布。Skool 本身已顯示課程標題，因此產生的內文不再重複輸出 `01～10` 課程標題。
 
