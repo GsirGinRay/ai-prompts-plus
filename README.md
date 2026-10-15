@@ -29,10 +29,11 @@ AI 提示詞+ 是一款支援 ChatGPT、Claude、Google Gemini 與 Grok 的 Chro
 
 下載完整 JSON 後，在擴充功能中使用「匯入」：
 
-- 檔案：[\library/ai-prompts-plus-full.json\](./library/ai-prompts-plus-full.json)
+- 一鍵下載最新版：https://github.com/GsirGinRay/ai-prompts-plus/releases/download/prompt-library/ai-prompts-plus-full.json
+- 檔案：[library/ai-prompts-plus-full.json](./library/ai-prompts-plus-full.json)
 - Raw：https://raw.githubusercontent.com/GsirGinRay/ai-prompts-plus/master/library/ai-prompts-plus-full.json
 
-此檔為外掛匯入格式（version / exportedAt / prompts），可直接一鍵匯入。內容會隨社群精選更新。
+此檔為官方提示詞庫格式（含版本號與每則提示詞的 sourceId），由 `prompt-library/library.json` 產生，與 Skool 課程內容完全一致。重複匯入會更新既有的官方提示詞，不會建立重複副本，也不會刪除你自己的提示詞。
 
 
 ### 使用方式

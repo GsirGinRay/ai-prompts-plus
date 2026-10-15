@@ -42,3 +42,6 @@ tmpclaude-*
 
 # 截圖（本地使用）
 screenshot/
+
+# Prompt library build output (published copy lives in library/)
+prompt-library/dist/
